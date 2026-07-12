@@ -8,6 +8,8 @@ use std::time::{Duration, Instant};
 
 #[cfg(unix)]
 use std::os::unix::process::CommandExt;
+#[cfg(windows)]
+use std::os::windows::process::CommandExt;
 
 /// Runs a command in `workdir`, forwarding stdout and stderr to stderr.
 ///
@@ -142,7 +144,18 @@ fn terminate_process_tree(child: &mut Child, program: &str) -> Result<()> {
         }
     }
 
-    #[cfg(not(unix))]
+    #[cfg(windows)]
+    {
+        let status = Command::new("taskkill")
+            .args(["/PID", &child.id().to_string(), "/T", "/F"])
+            .status()
+            .with_context(|| format!("Failed to terminate process tree for {program}"))?;
+        if !status.success() {
+            bail!("Failed to terminate process tree for {program}: {status}");
+        }
+    }
+
+    #[cfg(all(not(unix), not(windows)))]
     child
         .kill()
         .with_context(|| format!("Failed to terminate {program}"))?;
@@ -157,6 +170,11 @@ fn configure_process_group(command: &mut Command) {
     #[cfg(unix)]
     command.process_group(0);
 
-    #[cfg(not(unix))]
+    #[cfg(windows)]
+    {
+        command.creation_flags(0x0000_0200);
+    }
+
+    #[cfg(all(not(unix), not(windows)))]
     let _ = command;
 }

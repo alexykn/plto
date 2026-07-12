@@ -5,6 +5,8 @@ use std::time::{Duration, Instant};
 
 #[cfg(unix)]
 use std::os::unix::process::CommandExt;
+#[cfg(windows)]
+use std::os::windows::process::CommandExt;
 
 pub(crate) fn spawn(command: &mut Command, description: &str) -> Result<Child> {
     configure_process_group(command);
@@ -65,7 +67,18 @@ pub(crate) fn terminate_process_tree(child: &mut Child, description: &str) -> Re
         }
     }
 
-    #[cfg(not(unix))]
+    #[cfg(windows)]
+    {
+        let status = Command::new("taskkill")
+            .args(["/PID", &child.id().to_string(), "/T", "/F"])
+            .status()
+            .with_context(|| format!("Failed to terminate process tree for {description}"))?;
+        if !status.success() {
+            bail!("Failed to terminate process tree for {description}: {status}");
+        }
+    }
+
+    #[cfg(all(not(unix), not(windows)))]
     child
         .kill()
         .with_context(|| format!("Failed to terminate {description}"))?;
@@ -80,6 +93,11 @@ fn configure_process_group(command: &mut Command) {
     #[cfg(unix)]
     command.process_group(0);
 
-    #[cfg(not(unix))]
+    #[cfg(windows)]
+    {
+        command.creation_flags(0x0000_0200);
+    }
+
+    #[cfg(all(not(unix), not(windows)))]
     let _ = command;
 }
