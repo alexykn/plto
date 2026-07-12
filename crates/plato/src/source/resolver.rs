@@ -101,6 +101,9 @@ impl TemplateResolver {
 
         match &record.entry {
             TemplateEntry::Path { path } => {
+                if cli_rev.is_some() || cli_subpath.is_some() {
+                    bail!("--rev and --subpath cannot be used with local template {name:?}");
+                }
                 let source_path = expand_tilde(path)?;
                 let config = select_named_config(name, &source_path, record)?;
                 Ok(PreparedTemplateSource {

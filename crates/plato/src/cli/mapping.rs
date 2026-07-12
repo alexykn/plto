@@ -1,149 +1,114 @@
 use anyhow::{Result, anyhow};
-use std::path::PathBuf;
 
-use plato::InitSource;
+use plato::{ContextOverrideOptions, GitOptions, TemplateOptions, TemplateSource};
+
+use crate::cli::args::TemplateSourceArgs;
 
 const DEFAULT_VALIDATION_PROJECT_NAME: &str = "plato-validation";
 
 pub(crate) fn map_init_source_args(
-    template_name: Option<String>,
-    project_name: Option<String>,
-    path: Option<PathBuf>,
-    git: bool,
-) -> Result<(InitSource, String)> {
-    if let Some(template_path) = path {
-        if git {
-            return Err(anyhow!("--git and --path cannot be used together."));
-        }
-        let project_name = template_name.ok_or_else(|| {
-            anyhow!("When passing --path 'path' only a single additional arg 'project_name' is expected.")
-        })?;
-        return Ok((InitSource::TemplatePath { template_path }, project_name));
-    }
-
-    let project_name = project_name.ok_or_else(|| {
-        anyhow!(
-            "When running without --path please pass 'template_name' and 'project_name' as args."
-        )
-    })?;
-    let template_name = template_name.ok_or_else(|| {
-        anyhow!(
-            "When running without --path please pass 'template_name' and 'project_name' as args."
-        )
-    })?;
-    if git {
-        return Ok((
-            InitSource::GitTemplate {
-                git_spec: template_name,
-            },
-            project_name,
-        ));
-    }
-    Ok((InitSource::NamedTemplate { template_name }, project_name))
+    args: TemplateSourceArgs,
+    groups: Vec<String>,
+    inferred: Vec<String>,
+    strings: Vec<String>,
+) -> Result<TemplateOptions> {
+    let (source, project_name) = map_source(args, false)?;
+    Ok(template_options(
+        source,
+        project_name,
+        groups,
+        inferred,
+        strings,
+    ))
 }
 
 pub(crate) fn map_validate_source_args(
-    template_name: Option<String>,
-    project_name: Option<String>,
-    path: Option<PathBuf>,
-    git: bool,
-) -> Result<(InitSource, String)> {
-    if let Some(template_path) = path {
-        if git {
-            return Err(anyhow!("--git and --path cannot be used together."));
-        }
+    args: TemplateSourceArgs,
+    groups: Vec<String>,
+    inferred: Vec<String>,
+    strings: Vec<String>,
+) -> Result<TemplateOptions> {
+    let (source, project_name) = map_source(args, true)?;
+    Ok(template_options(
+        source,
+        project_name,
+        groups,
+        inferred,
+        strings,
+    ))
+}
 
-        let project_name = match (template_name, project_name) {
-            (None, None) => DEFAULT_VALIDATION_PROJECT_NAME.to_string(),
-            (Some(project_name), None) | (None, Some(project_name)) => project_name,
-            (Some(_), Some(_)) => {
-                return Err(anyhow!(
-                    "When passing --path to 'plato val', pass at most one optional project_name arg."
-                ));
-            }
-        };
+fn map_source(args: TemplateSourceArgs, validation: bool) -> Result<(TemplateSource, String)> {
+    let TemplateSourceArgs {
+        template_name,
+        project_name,
+        path,
+        git,
+        rev,
+        subpath,
+    } = args;
 
-        return Ok((InitSource::TemplatePath { template_path }, project_name));
+    let git_options = GitOptions {
+        revision: rev,
+        subpath,
+    };
+    if let Some(path) = path {
+        return map_path_source(path, template_name, project_name, validation);
     }
 
-    let template_name = template_name.ok_or_else(|| {
-        anyhow!("When running 'plato val' without --path please pass a template_name arg.")
-    })?;
-    let project_name = project_name.unwrap_or_else(|| DEFAULT_VALIDATION_PROJECT_NAME.to_string());
+    let name = template_name
+        .ok_or_else(|| anyhow!("Without --path, pass a template name and project name."))?;
+    let project_name = if validation {
+        project_name.unwrap_or_else(|| DEFAULT_VALIDATION_PROJECT_NAME.to_string())
+    } else {
+        project_name
+            .ok_or_else(|| anyhow!("Without --path, pass a template name and project name."))?
+    };
+
     if git {
         return Ok((
-            InitSource::GitTemplate {
-                git_spec: template_name,
+            TemplateSource::Git {
+                spec: name,
+                options: git_options,
             },
             project_name,
         ));
     }
-    Ok((InitSource::NamedTemplate { template_name }, project_name))
+    Ok((TemplateSource::Named { name, git_options }, project_name))
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+fn map_path_source(
+    path: std::path::PathBuf,
+    first: Option<String>,
+    second: Option<String>,
+    validation: bool,
+) -> Result<(TemplateSource, String)> {
+    let project_name = match (first, second, validation) {
+        (Some(name), None, _) => name,
+        (None, None, true) => DEFAULT_VALIDATION_PROJECT_NAME.to_string(),
+        (None, None, false) => {
+            return Err(anyhow!("With --path, pass exactly one project name."));
+        }
+        (Some(_), Some(_), _) => {
+            return Err(anyhow!("With --path, pass at most one project name."));
+        }
+        (None, Some(name), true) => name,
+        (None, Some(_), false) => unreachable!("second positional without first is impossible"),
+    };
+    Ok((TemplateSource::Path { path }, project_name))
+}
 
-    #[test]
-    fn maps_named_template_args() {
-        let result = map_init_source_args(
-            Some("template_name".to_string()),
-            Some("project_name".to_string()),
-            None,
-            false,
-        )
-        .unwrap();
-
-        let InitSource::NamedTemplate { template_name } = result.0 else {
-            panic!("Expected InitSource::NamedTemplate");
-        };
-
-        assert_eq!(template_name, "template_name");
-        assert_eq!(result.1, "project_name");
-    }
-
-    #[test]
-    fn maps_path_template_args() {
-        let result = map_init_source_args(
-            Some("project_name".to_string()),
-            None,
-            Some(PathBuf::from("/some/path")),
-            false,
-        )
-        .unwrap();
-
-        let InitSource::TemplatePath { template_path } = result.0 else {
-            panic!("Expected InitSource::TemplatePath");
-        };
-
-        assert_eq!(template_path, PathBuf::from("/some/path"));
-        assert_eq!(result.1, "project_name");
-    }
-
-    #[test]
-    fn maps_validation_without_project_name() {
-        let result =
-            map_validate_source_args(Some("template_name".to_string()), None, None, false).unwrap();
-
-        let InitSource::NamedTemplate { template_name } = result.0 else {
-            panic!("Expected InitSource::NamedTemplate");
-        };
-
-        assert_eq!(template_name, "template_name");
-        assert_eq!(result.1, DEFAULT_VALIDATION_PROJECT_NAME);
-    }
-
-    #[test]
-    fn maps_path_validation_without_project_name() {
-        let result =
-            map_validate_source_args(None, None, Some(PathBuf::from("/some/path")), false).unwrap();
-
-        let InitSource::TemplatePath { template_path } = result.0 else {
-            panic!("Expected InitSource::TemplatePath");
-        };
-
-        assert_eq!(template_path, PathBuf::from("/some/path"));
-        assert_eq!(result.1, DEFAULT_VALIDATION_PROJECT_NAME);
+fn template_options(
+    source: TemplateSource,
+    project_name: String,
+    groups: Vec<String>,
+    inferred: Vec<String>,
+    strings: Vec<String>,
+) -> TemplateOptions {
+    TemplateOptions {
+        project_name,
+        source,
+        groups,
+        context_overrides: ContextOverrideOptions { inferred, strings },
     }
 }

@@ -23,38 +23,62 @@ use crate::setup::runner::{SetupRunnerContext, run_setup_plan};
 use crate::source::TemplateRequest;
 use crate::source::TemplateResolver;
 use crate::source::git::TempCheckout;
-use crate::target::{ExistingTargetPolicy, TargetTransaction};
+pub use crate::target::ExistingTargetPolicy;
+
+use crate::target::TargetTransaction;
 use crate::util::open_config_file;
 use crate::workspace::{WorkspaceRenderContext, render_workspace};
 
+#[derive(Clone, Debug, Default)]
+pub struct GitOptions {
+    pub revision: Option<String>,
+    pub subpath: Option<PathBuf>,
+}
+
+impl GitOptions {
+    pub fn is_empty(&self) -> bool {
+        self.revision.is_none() && self.subpath.is_none()
+    }
+}
+
 #[derive(Clone, Debug)]
-pub enum InitSource {
-    NamedTemplate { template_name: String },
-    GitTemplate { git_spec: String },
-    TemplatePath { template_path: PathBuf },
+pub enum TemplateSource {
+    Named {
+        name: String,
+        git_options: GitOptions,
+    },
+    Git {
+        spec: String,
+        options: GitOptions,
+    },
+    Path {
+        path: PathBuf,
+    },
+}
+
+#[derive(Clone, Debug, Default)]
+pub struct ContextOverrideOptions {
+    pub inferred: Vec<String>,
+    pub strings: Vec<String>,
+}
+
+#[derive(Clone, Debug)]
+pub struct TemplateOptions {
+    pub project_name: String,
+    pub source: TemplateSource,
+    pub groups: Vec<String>,
+    pub context_overrides: ContextOverrideOptions,
 }
 
 #[derive(Clone, Debug)]
 pub struct RunOptions {
-    pub project_name: String,
-    pub source: InitSource,
-    pub force: bool,
-    pub rev: Option<String>,
-    pub subpath: Option<PathBuf>,
-    pub groups: Vec<String>,
-    pub set_values: Vec<String>,
-    pub set_string_values: Vec<String>,
+    pub template: TemplateOptions,
+    pub existing_target: ExistingTargetPolicy,
 }
 
 #[derive(Clone, Debug)]
 pub struct ValidateOptions {
-    pub project_name: String,
-    pub source: InitSource,
-    pub rev: Option<String>,
-    pub subpath: Option<PathBuf>,
-    pub groups: Vec<String>,
-    pub set_values: Vec<String>,
-    pub set_string_values: Vec<String>,
+    pub template: TemplateOptions,
 }
 
 #[derive(Clone, Debug)]
@@ -79,7 +103,7 @@ struct PreparedTemplateContext {
 
 struct ExecutionContext {
     project_name: String,
-    force: bool,
+    existing_target: ExistingTargetPolicy,
     source_path: PathBuf,
     target_path: PathBuf,
     config: Config,
@@ -91,29 +115,11 @@ impl TryFrom<RunOptions> for ExecutionContext {
     type Error = anyhow::Error;
 
     fn try_from(options: RunOptions) -> Result<Self, Self::Error> {
-        let RunOptions {
-            project_name,
-            source,
-            force,
-            rev,
-            subpath,
-            groups,
-            set_values,
-            set_string_values,
-        } = options;
-        let prepared = prepare_template_context(
-            source,
-            project_name,
-            rev,
-            subpath,
-            &groups,
-            &set_values,
-            &set_string_values,
-        )?;
+        let prepared = prepare_template_context(options.template)?;
         let target_path = target_path_for_project(&prepared.project_name)?;
         Ok(Self {
             project_name: prepared.project_name,
-            force,
+            existing_target: options.existing_target,
             source_path: prepared.source_path,
             target_path,
             config: prepared.config,
@@ -143,37 +149,35 @@ fn validate_setup_sources(
     Ok(())
 }
 
-fn prepare_template_context(
-    source: InitSource,
-    project_name: String,
-    rev: Option<String>,
-    subpath: Option<PathBuf>,
-    groups: &[String],
-    set_values: &[String],
-    set_string_values: &[String],
-) -> Result<PreparedTemplateContext> {
+fn prepare_template_context(options: TemplateOptions) -> Result<PreparedTemplateContext> {
+    let TemplateOptions {
+        project_name,
+        source,
+        groups,
+        context_overrides,
+    } = options;
     let resolver = TemplateResolver::from_global_config()?;
     let prepared_source = match source {
-        InitSource::TemplatePath { template_path } => resolver.prepare(TemplateRequest::Path {
-            path: template_path,
+        TemplateSource::Path { path } => resolver.prepare(TemplateRequest::Path { path })?,
+        TemplateSource::Git { spec, options } => resolver.prepare(TemplateRequest::Git {
+            spec,
+            cli_rev: options.revision,
+            cli_subpath: options.subpath,
         })?,
-        InitSource::GitTemplate { git_spec } => resolver.prepare(TemplateRequest::Git {
-            spec: git_spec,
-            cli_rev: rev,
-            cli_subpath: subpath,
-        })?,
-        InitSource::NamedTemplate { template_name } => {
+        TemplateSource::Named { name, git_options } => {
             resolver.prepare(TemplateRequest::Named {
-                name: template_name,
-                cli_rev: rev,
-                cli_subpath: subpath,
+                name,
+                cli_rev: git_options.revision,
+                cli_subpath: git_options.subpath,
             })?
         }
     };
 
     let mut config = prepared_source.config;
-    apply_group_configs(&mut config, &prepared_source.source_path, groups)?;
-    let context_overrides = ContextOverrides::parse(set_values, set_string_values)?.into_values();
+    apply_group_configs(&mut config, &prepared_source.source_path, &groups)?;
+    let context_overrides =
+        ContextOverrides::parse(&context_overrides.inferred, &context_overrides.strings)?
+            .into_values();
 
     Ok(PreparedTemplateContext {
         project_name,
@@ -218,12 +222,8 @@ pub fn run(options: RunOptions) -> Result<()> {
     validate_setup_sources(&setup_plan, &rendered)?;
     let global_config = load_global_config()?;
 
-    let policy = if exec_ctx.force {
-        ExistingTargetPolicy::Replace
-    } else {
-        ExistingTargetPolicy::Reject
-    };
-    let mut target = TargetTransaction::begin(exec_ctx.target_path.clone(), policy)?;
+    let mut target =
+        TargetTransaction::begin(exec_ctx.target_path.clone(), exec_ctx.existing_target)?;
     let initialization = (|| {
         rendered.write_to(target.path())?;
         run_setup_plan(
@@ -252,24 +252,7 @@ pub fn run(options: RunOptions) -> Result<()> {
 /// # Errors
 /// Returns an error if source resolution, rendering, or setup-plan validation fails.
 pub fn validate(options: ValidateOptions) -> Result<()> {
-    let ValidateOptions {
-        project_name,
-        source,
-        rev,
-        subpath,
-        groups,
-        set_values,
-        set_string_values,
-    } = options;
-    let prepared = prepare_template_context(
-        source,
-        project_name,
-        rev,
-        subpath,
-        &groups,
-        &set_values,
-        &set_string_values,
-    )?;
+    let prepared = prepare_template_context(options.template)?;
     let render_ctx = WorkspaceRenderContext::from(&prepared);
     let rendered = render_workspace(&render_ctx)?;
     let target_path = target_path_for_project(&prepared.project_name)?;

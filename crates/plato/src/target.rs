@@ -7,7 +7,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 static BACKUP_COUNTER: AtomicU64 = AtomicU64::new(0);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum ExistingTargetPolicy {
+pub enum ExistingTargetPolicy {
     Reject,
     Replace,
 }

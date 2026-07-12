@@ -1,5 +1,7 @@
 use plato::plugins::install::PluginInstallBackend;
-use plato::{PluginInstallOptions, PluginRegisterOptions, RunOptions, ValidateOptions};
+use plato::{
+    ExistingTargetPolicy, PluginInstallOptions, PluginRegisterOptions, RunOptions, ValidateOptions,
+};
 
 use crate::cli::args::{Commands, InitArgs, PluginCommands, PluginInstallArgs, ValArgs};
 use crate::cli::mapping::{map_init_source_args, map_validate_source_args};
@@ -15,34 +17,32 @@ pub(crate) fn run_command(command: Commands) -> anyhow::Result<()> {
 }
 
 fn run_init(args: InitArgs) -> anyhow::Result<()> {
-    let (source, project_name) =
-        map_init_source_args(args.template_name, args.project_name, args.path, args.git)?;
+    let template = map_init_source_args(
+        args.source,
+        args.groups,
+        args.set_values,
+        args.set_string_values,
+    )?;
 
     plato::run(RunOptions {
-        source,
-        project_name,
-        force: args.force,
-        rev: args.rev,
-        subpath: args.subpath,
-        groups: args.groups,
-        set_values: args.set_values,
-        set_string_values: args.set_string_values,
+        template,
+        existing_target: if args.force {
+            ExistingTargetPolicy::Replace
+        } else {
+            ExistingTargetPolicy::Reject
+        },
     })
 }
 
 fn run_validate(args: ValArgs) -> anyhow::Result<()> {
-    let (source, project_name) =
-        map_validate_source_args(args.template_name, args.project_name, args.path, args.git)?;
+    let template = map_validate_source_args(
+        args.source,
+        args.groups,
+        args.set_values,
+        args.set_string_values,
+    )?;
 
-    plato::validate(ValidateOptions {
-        source,
-        project_name,
-        rev: args.rev,
-        subpath: args.subpath,
-        groups: args.groups,
-        set_values: args.set_values,
-        set_string_values: args.set_string_values,
-    })
+    plato::validate(ValidateOptions { template })
 }
 
 fn run_plugin(command: PluginCommands) -> anyhow::Result<()> {

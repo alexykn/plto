@@ -81,32 +81,38 @@ pub(crate) struct PluginInstallArgs {
 }
 
 #[derive(Args, Debug)]
-pub(crate) struct InitArgs {
+pub(crate) struct TemplateSourceArgs {
     /// Configured template name, or Git spec when --git is passed
     pub(crate) template_name: Option<String>,
 
-    /// The name of the new project directory
+    /// The project directory name; when --path is used, supply this as the first positional
     pub(crate) project_name: Option<String>,
 
-    /// Overwrite existing target directory if it exists
-    #[arg(short, long)]
-    pub(crate) force: bool,
-
     /// Provide an explicit path to load the template from
-    #[arg(short, long)]
+    #[arg(short, long, conflicts_with_all = ["git", "rev", "subpath"])]
     pub(crate) path: Option<PathBuf>,
 
     /// Treat the template argument as an ad-hoc Git remote spec
-    #[arg(long)]
+    #[arg(long, conflicts_with = "path")]
     pub(crate) git: bool,
 
     /// Git branch, tag, or commit to use for remote templates
-    #[arg(long)]
+    #[arg(long, conflicts_with = "path")]
     pub(crate) rev: Option<String>,
 
     /// Subpath inside a remote repository to use as the template root
-    #[arg(long)]
+    #[arg(long, conflicts_with = "path")]
     pub(crate) subpath: Option<PathBuf>,
+}
+
+#[derive(Args, Debug)]
+pub(crate) struct InitArgs {
+    #[command(flatten)]
+    pub(crate) source: TemplateSourceArgs,
+
+    /// Replace an existing target directory transactionally
+    #[arg(short, long)]
+    pub(crate) force: bool,
 
     /// Apply an optional template group such as docker or ci
     #[arg(short = 'g', long = "group")]
@@ -123,27 +129,8 @@ pub(crate) struct InitArgs {
 
 #[derive(Args, Debug)]
 pub(crate) struct ValArgs {
-    /// Configured template name, or Git spec when --git is passed
-    pub(crate) template_name: Option<String>,
-
-    /// Optional name used for rendering validation context
-    pub(crate) project_name: Option<String>,
-
-    /// Provide an explicit path to load the template from
-    #[arg(short, long)]
-    pub(crate) path: Option<PathBuf>,
-
-    /// Treat the template argument as an ad-hoc Git remote spec
-    #[arg(long)]
-    pub(crate) git: bool,
-
-    /// Git branch, tag, or commit to use for remote templates
-    #[arg(long)]
-    pub(crate) rev: Option<String>,
-
-    /// Subpath inside a remote repository to use as the template root
-    #[arg(long)]
-    pub(crate) subpath: Option<PathBuf>,
+    #[command(flatten)]
+    pub(crate) source: TemplateSourceArgs,
 
     /// Apply an optional template group such as docker or ci
     #[arg(short = 'g', long = "group")]
