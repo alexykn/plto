@@ -2,6 +2,8 @@
 
 Template configuration lives in `plato.toml` at the template root. The file is configuration only and is not copied into the generated project.
 
+Plato rejects unknown core configuration fields. This makes misspelled options fail instead of silently changing behavior. Plugin-specific tables are validated by their plugin.
+
 ## Top-level sections
 
 ```toml
@@ -62,6 +64,8 @@ package = { path = "src/package_template", replace = "src/{{ project_snake }}" }
 ```
 
 `path` must match a relative path in the template source tree. `replace` is rendered with the same MiniJinja environment as file contents.
+
+Every rendered output path must be unique. For example, a template cannot contain both `README.md` and `README.md.j2`, because both would produce `README.md`.
 
 ## Path excludes
 
@@ -159,6 +163,8 @@ Setup steps from groups are appended in CLI order.
 ## Rendering rules
 
 Files ending in `.j2` or `.mj` are rendered with MiniJinja and written without that extension. Non-template files are copied as bytes. Symlinks inside templates are rejected for safety.
+
+On Unix, Plato preserves source permission bits, including executable scripts. Template-root paths must be directories; a regular file is never treated as an empty template.
 
 Plato also registers Ansible-style regex filters:
 

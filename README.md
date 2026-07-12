@@ -41,6 +41,8 @@ Common options for `init` and `val`:
 --set-string <key=value> String template context override
 ```
 
+`--rev` and `--subpath` apply only to remote templates. `--path` always requires a directory and cannot be combined with Git-specific options. `plato init --force` transactionally replaces an existing target directory and restores the original directory if rendering or setup fails.
+
 ## Quick start
 
 Register templates in `~/.config/plato/config.toml`:
@@ -81,11 +83,13 @@ More complete examples live in [`docs/examples/`](docs/examples/).
 - [Configuration reference](docs/configuration.md): `plato.toml`, template context, path rewrites/excludes, setup steps, and groups.
 - [Plugin system](docs/plugins.md): external plugin protocol, discovery, installation, and Rust plugin authoring.
 - [Config examples](docs/examples/): practical `plato.toml` snippets for first-party plugins.
+- [Release guide](docs/releasing.md): staged package publication for the core and plugin crates.
 
 ## Core concepts
 
-- **Templates** are normal directories. Files ending in `.j2` or `.mj` are rendered and written without that extension.
+- **Templates** are normal directories. Files ending in `.j2` or `.mj` are rendered and written without that extension. Output-path collisions are rejected.
 - **Symlinks** inside templates are rejected for safety.
+- **Permissions** on source files, including executable bits on Unix, are preserved in generated files.
 - **Template context** provides project name variants such as `project_name`, `project_kebab`, `project_snake`, and `project_pascal`.
 - **Path rewrites/excludes** are core rendering behavior and happen before template contents are rendered.
 - **Plugins** are external executables named `plato-plugin-<name>` that run after the rendered project is written.

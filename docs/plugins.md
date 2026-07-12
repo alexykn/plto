@@ -22,6 +22,7 @@ Protocol rules:
 - stdout is JSON protocol output only.
 - stderr is for logs, diagnostics, and child tool output.
 - `setup` receives JSON on stdin.
+- Metadata `name` must match the requested plugin name, support Plato's requested API version, and advertise the `setup` capability before Plato will run it.
 
 ## Metadata
 
@@ -68,6 +69,8 @@ $PLATO_HOME/plugins/bin
 
 If `PLATO_HOME` is not set, Plato uses its global config directory.
 
+Plugin resolution uses this precedence: explicit registry entry, Plato-managed executable, then `PATH`. `plato plugin list` marks the effective candidate and any shadowed alternatives. Executable lookup respects platform conventions such as Windows `PATHEXT`.
+
 ## Plugin management
 
 ```bash
@@ -102,6 +105,8 @@ Rust plugins can use:
 - `plato-plugin-support` for stdin/stdout runtime helpers and safe command execution
 
 Plugin setup receives `request.options.timeout_secs` when a setup step configures `timeout_secs`. Plato enforces that timeout at the plugin process boundary. Plugins using `plato-plugin-support::command::run_command_with_timeout` can also apply the same timeout to child commands they spawn. Plugin stdout is reserved for JSON protocol responses; command output forwarded by the support crate is written to stderr.
+
+Timed-out plugin processes are terminated with their descendants. On Unix Plato uses process groups; on Windows it uses `taskkill /T` for the spawned process tree.
 
 Minimal shape:
 
