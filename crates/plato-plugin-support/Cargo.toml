@@ -1,6 +1,7 @@
 [package]
 name = "plato-plugin-support"
 version = "0.1.0"
+description = "Runtime support helpers for Plato setup plugins"
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
@@ -9,5 +10,5 @@ repository.workspace = true
 anyhow.workspace = true
 serde.workspace = true
 serde_json.workspace = true
-plato-plugin-api = { path = "../plato-plugin-api" }
+plato-plugin-api.workspace = true
 libc.workspace = true

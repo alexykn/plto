@@ -1,21 +1,22 @@
 [package]
 name = "plato"
 version = "0.1.0"
-edition = "2024"
+description = "A local project scaffolding tool with pluggable setup steps"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
 
 [[bin]]
 name = "plato"
 path = "src/main.rs"
 
 [dependencies]
-plato-plugin-api = { path = "../plato-plugin-api" }
+plato-plugin-api.workspace = true
 anyhow.workspace = true
 blake3 = "1.8.5"
 clap.workspace = true
 directories.workspace = true
 fs2 = "0.4.3"
-fs_extra = "1.3.0"
-home = "0.5.12"
 minijinja = "2.20.0"
 regex = "1.12.3"
 serde.workspace = true

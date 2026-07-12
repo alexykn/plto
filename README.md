@@ -7,10 +7,10 @@ The core renderer stays deterministic: template context, path rewrites, path exc
 ## Install
 
 ```bash
-cargo install plato
+cargo install --path crates/plato
 ```
 
-First-party plugins are separate binaries. Until they are published, install them locally from this workspace:
+First-party plugins are separate binaries. Install them locally from this workspace:
 
 ```bash
 plato plugin install uv --path plugins/plato-plugin-uv

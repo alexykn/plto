@@ -25,3 +25,5 @@ serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.150"
 toml = "1.1.2"
 libc = "0.2.183"
+plato-plugin-api = { version = "0.1.0", path = "crates/plato-plugin-api" }
+plato-plugin-support = { version = "0.1.0", path = "crates/plato-plugin-support" }
