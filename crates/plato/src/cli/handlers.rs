@@ -24,14 +24,25 @@ fn run_init(args: InitArgs) -> anyhow::Result<()> {
         args.set_string_values,
     )?;
 
-    plato::run(RunOptions {
+    let summary = plato::run(RunOptions {
         template,
         existing_target: if args.force {
             ExistingTargetPolicy::Replace
         } else {
             ExistingTargetPolicy::Reject
         },
-    })
+    })?;
+    let action = if summary.replaced_existing_target {
+        "Replaced"
+    } else {
+        "Created"
+    };
+    println!("{action} project at {}", summary.target_path.display());
+    println!(
+        "Rendered {} files and {} directories; completed {} setup steps.",
+        summary.files_written, summary.directories_created, summary.setup_steps_completed
+    );
+    Ok(())
 }
 
 fn run_validate(args: ValArgs) -> anyhow::Result<()> {

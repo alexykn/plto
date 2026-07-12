@@ -27,7 +27,7 @@ use crate::source::TemplateResolver;
 use crate::source::git::TempCheckout;
 pub use crate::target::ExistingTargetPolicy;
 
-use crate::target::TargetTransaction;
+use crate::target::{TargetCommitOutcome, TargetTransaction};
 use crate::util::open_config_file;
 use crate::workspace::{WorkspaceRenderContext, render_workspace};
 
@@ -81,6 +81,15 @@ pub struct RunOptions {
 #[derive(Clone, Debug)]
 pub struct ValidateOptions {
     pub template: TemplateOptions,
+}
+
+#[derive(Clone, Debug)]
+pub struct RunSummary {
+    pub target_path: PathBuf,
+    pub files_written: usize,
+    pub directories_created: usize,
+    pub setup_steps_completed: usize,
+    pub replaced_existing_target: bool,
 }
 
 #[derive(Clone, Debug)]
@@ -207,7 +216,14 @@ pub fn edit_config(template_name: &str) -> Result<()> {
 /// Returns an error if the global config cannot be loaded or the template registry cannot be built.
 pub fn display_templates(verbose: bool) -> Result<()> {
     let resolver = TemplateResolver::from_global_config()?;
-    print!("{}", resolver.format_templates(verbose));
+    let output = resolver.format_templates(verbose);
+    if output.is_empty() {
+        println!(
+            "No templates configured. Add entries under [templates] in ~/.config/plato/config.toml."
+        );
+    } else {
+        print!("{output}");
+    }
     Ok(())
 }
 
@@ -216,7 +232,7 @@ pub fn display_templates(verbose: bool) -> Result<()> {
 /// # Errors
 /// Returns an error if argument parsing, template loading, filesystem access,
 /// template rendering, or project setup fails.
-pub fn run(options: RunOptions) -> Result<()> {
+pub fn run(options: RunOptions) -> Result<RunSummary> {
     let exec_ctx = ExecutionContext::try_from(options)?;
     let render_ctx = WorkspaceRenderContext::from(&exec_ctx);
     let rendered = render_workspace(&render_ctx)?;
@@ -228,7 +244,7 @@ pub fn run(options: RunOptions) -> Result<()> {
     let mut target =
         TargetTransaction::begin(exec_ctx.target_path.clone(), exec_ctx.existing_target)?;
     let initialization = (|| {
-        rendered.write_to(target.path())?;
+        let write_summary = rendered.write_to(target.path())?;
         run_setup_plan(
             &resolved_setup,
             &SetupRunnerContext {
@@ -240,13 +256,20 @@ pub fn run(options: RunOptions) -> Result<()> {
                 verbose: false,
             },
         )?;
-        Ok(())
+        Ok(write_summary)
     })();
-    if let Err(error) = initialization {
-        return Err(target.rollback_error(error));
-    }
-    target.commit()?;
-    Ok(())
+    let write_summary = match initialization {
+        Ok(summary) => summary,
+        Err(error) => return Err(target.rollback_error(error)),
+    };
+    let target_outcome = target.commit()?;
+    Ok(RunSummary {
+        target_path: exec_ctx.target_path,
+        files_written: write_summary.files_written,
+        directories_created: write_summary.directories_created,
+        setup_steps_completed: resolved_setup.steps.len(),
+        replaced_existing_target: matches!(target_outcome, TargetCommitOutcome::Replaced),
+    })
 }
 
 /// Validate a template without writing a project or running setup commands.
@@ -296,9 +319,15 @@ pub fn remove_plugin(name: &str) -> Result<()> {
 /// Returns an error if global config or the managed plugin directory cannot be read.
 pub fn display_plugins() -> Result<()> {
     let global_config = load_global_config()?;
+    let mut entries = Vec::new();
     for (name, entry) in &global_config.plugin_registry {
         let source = entry.source.as_deref().unwrap_or("manual");
-        println!("{name}\tregistry:{source}\t{}", entry.command.display());
+        entries.push((
+            name.clone(),
+            0_u8,
+            format!("registry:{source}"),
+            entry.command.display().to_string(),
+        ));
     }
     let managed_dir = plugins::paths::managed_plugin_bin_dir()?;
     if managed_dir.exists() {
@@ -306,11 +335,12 @@ pub fn display_plugins() -> Result<()> {
             let entry = entry?;
             let name = entry.file_name().to_string_lossy().to_string();
             if name.starts_with("plato-plugin-") {
-                println!(
-                    "{}\tmanaged\t{}",
-                    name.trim_start_matches("plato-plugin-"),
-                    entry.path().display()
-                );
+                entries.push((
+                    plugin_name_from_executable(&name),
+                    1,
+                    "managed".to_string(),
+                    entry.path().display().to_string(),
+                ));
             }
         }
     }
@@ -318,13 +348,36 @@ pub fn display_plugins() -> Result<()> {
         let Some(name) = path.file_name().and_then(|name| name.to_str()) else {
             continue;
         };
-        println!(
-            "{}\tpath\t{}",
-            name.trim_start_matches("plato-plugin-"),
-            path.display()
-        );
+        entries.push((
+            plugin_name_from_executable(name),
+            2,
+            "path".to_string(),
+            path.display().to_string(),
+        ));
+    }
+    entries.sort();
+    entries.dedup();
+    if entries.is_empty() {
+        println!("No plugins discovered. Install one with: plato plugin install <name>");
+        return Ok(());
+    }
+    let mut effective = std::collections::BTreeSet::new();
+    for (name, _, source, command) in entries {
+        let marker = if effective.insert(name.clone()) {
+            "effective"
+        } else {
+            "shadowed"
+        };
+        println!("{name}\t{marker}\t{source}\t{command}");
     }
     Ok(())
+}
+
+fn plugin_name_from_executable(file_name: &str) -> String {
+    let name = file_name.trim_start_matches("plato-plugin-");
+    name.strip_suffix(std::env::consts::EXE_SUFFIX)
+        .unwrap_or(name)
+        .to_string()
 }
 
 impl From<&PreparedTemplateContext> for WorkspaceRenderContext {
