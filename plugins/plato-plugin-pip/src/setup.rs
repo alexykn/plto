@@ -1,12 +1,10 @@
 use anyhow::{Result, bail};
 use plato_plugin_support::command::run_command_with_timeout;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::time::Duration;
 
 use crate::config::{PipConfig, PythonScope};
 use crate::pyproject::{editable_install_target, ensure_readme, get_or_create_requirements_file};
-
-const RELATIVE_VENV_PYTHON: &str = ".venv/bin/python";
 
 pub(crate) fn setup(workdir: &Path, config: &PipConfig, timeout: Option<Duration>) -> Result<()> {
     validate(config)?;
@@ -22,10 +20,7 @@ pub(crate) fn setup(workdir: &Path, config: &PipConfig, timeout: Option<Duration
 
 fn install_project(workdir: &Path, config: &PipConfig, timeout: Option<Duration>) -> Result<()> {
     ensure_readme(workdir)?;
-    let python = workdir
-        .join(RELATIVE_VENV_PYTHON)
-        .to_string_lossy()
-        .to_string();
+    let python = venv_python(workdir).to_string_lossy().into_owned();
     let editable_target = editable_install_target(&config.extras);
     run_command_with_timeout(
         &python,
@@ -36,10 +31,7 @@ fn install_project(workdir: &Path, config: &PipConfig, timeout: Option<Duration>
 }
 
 fn install_requirements(workdir: &Path, timeout: Option<Duration>) -> Result<()> {
-    let python = workdir
-        .join(RELATIVE_VENV_PYTHON)
-        .to_string_lossy()
-        .to_string();
+    let python = venv_python(workdir).to_string_lossy().into_owned();
     let requirements = get_or_create_requirements_file(workdir)?;
     let requirements = requirements.to_string_lossy().to_string();
     run_command_with_timeout(
@@ -48,6 +40,16 @@ fn install_requirements(workdir: &Path, timeout: Option<Duration>) -> Result<()>
         workdir,
         timeout,
     )
+}
+
+fn venv_python(workdir: &Path) -> PathBuf {
+    #[cfg(windows)]
+    {
+        return workdir.join(".venv").join("Scripts").join("python.exe");
+    }
+
+    #[cfg(not(windows))]
+    workdir.join(".venv").join("bin").join("python")
 }
 
 fn validate(config: &PipConfig) -> Result<()> {
@@ -77,5 +79,14 @@ mod tests {
             ..PipConfig::default()
         };
         assert!(validate(&config).is_err());
+    }
+
+    #[test]
+    fn builds_platform_appropriate_venv_python_path() {
+        let path = venv_python(Path::new("project"));
+        #[cfg(windows)]
+        assert!(path.ends_with(".venv\\Scripts\\python.exe"));
+        #[cfg(not(windows))]
+        assert!(path.ends_with(".venv/bin/python"));
     }
 }

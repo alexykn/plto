@@ -6,7 +6,8 @@ use std::path::{Path, PathBuf};
 use std::os::unix::fs::PermissionsExt;
 
 use crate::config::GlobalConfig;
-use crate::plugins::id::PluginId;
+use crate::fs::path::expand_tilde;
+use crate::plugins::id::{PluginId, executable_names};
 use crate::plugins::paths::managed_plugin_bin_dir;
 
 #[derive(Debug, Clone)]
@@ -27,21 +28,25 @@ pub(crate) fn resolve_plugin_command(
     plugin: &PluginId,
 ) -> Result<PluginCommand> {
     if let Some(entry) = global_config.plugin_registry.get(plugin.as_str()) {
+        let command = expand_tilde(&entry.command)?;
         return Ok(PluginCommand {
-            command: entry.command.clone(),
+            command,
             kind: PluginLocationKind::Registry,
         });
     }
 
-    let managed = managed_plugin_bin_dir()?.join(plugin.binary_name());
-    if managed.exists() {
-        return Ok(PluginCommand {
-            command: managed,
-            kind: PluginLocationKind::Managed,
-        });
+    let managed_dir = managed_plugin_bin_dir()?;
+    for name in executable_names(&plugin.crate_name()) {
+        let managed = managed_dir.join(name);
+        if is_executable_file(&managed) {
+            return Ok(PluginCommand {
+                command: managed,
+                kind: PluginLocationKind::Managed,
+            });
+        }
     }
 
-    if let Some(path) = find_on_path(&plugin.binary_name()) {
+    if let Some(path) = find_on_path(&plugin.crate_name()) {
         return Ok(PluginCommand {
             command: path,
             kind: PluginLocationKind::Path,
@@ -50,7 +55,7 @@ pub(crate) fn resolve_plugin_command(
 
     bail!(
         "Plugin {plugin:?} was not found. Expected a {} executable in Plato's plugin dir or on PATH.",
-        plugin.binary_name()
+        plugin.crate_name()
     )
 }
 
@@ -81,9 +86,15 @@ pub(crate) fn discover_path_plugins() -> Vec<PathBuf> {
 
 fn find_on_path(binary: &str) -> Option<PathBuf> {
     let path = env::var_os("PATH")?;
-    env::split_paths(&path)
-        .map(|dir| dir.join(binary))
-        .find(|candidate| is_executable_file(candidate))
+    for dir in env::split_paths(&path) {
+        for name in executable_names(binary) {
+            let candidate = dir.join(name);
+            if is_executable_file(&candidate) {
+                return Some(candidate);
+            }
+        }
+    }
+    None
 }
 
 fn is_executable_file(path: &Path) -> bool {

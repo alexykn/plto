@@ -1,4 +1,5 @@
 use anyhow::{Result, bail};
+use std::ffi::OsString;
 use std::fmt::{Display, Formatter};
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -23,9 +24,28 @@ impl PluginId {
         &self.0
     }
 
-    pub(crate) fn binary_name(&self) -> String {
+    pub(crate) fn crate_name(&self) -> String {
         format!("plato-plugin-{}", self.0)
     }
+}
+
+pub(crate) fn executable_names(base: &str) -> Vec<OsString> {
+    #[cfg(windows)]
+    {
+        let extensions =
+            std::env::var_os("PATHEXT").unwrap_or_else(|| OsString::from(".COM;.EXE;.BAT;.CMD"));
+        let mut names = extensions
+            .to_string_lossy()
+            .split(';')
+            .filter(|extension| !extension.is_empty())
+            .map(|extension| OsString::from(format!("{base}{extension}")))
+            .collect::<Vec<_>>();
+        names.push(OsString::from(base));
+        return names;
+    }
+
+    #[cfg(not(windows))]
+    vec![OsString::from(base)]
 }
 
 impl Display for PluginId {

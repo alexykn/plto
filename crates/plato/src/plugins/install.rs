@@ -45,7 +45,7 @@ pub fn install_plugin(name: &str, backend: PluginInstallBackend) -> Result<()> {
 
 fn install_cargo(name: &str) -> Result<()> {
     let plugin = PluginId::parse(name.to_string())?;
-    let crate_name = plugin.binary_name();
+    let crate_name = plugin.crate_name();
     let root = managed_plugin_root()?;
     std::fs::create_dir_all(&root)?;
     run_status(
