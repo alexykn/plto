@@ -1,18 +1,23 @@
 use anyhow::{Context, Result};
-use std::collections::HashMap;
 use std::fs::{create_dir_all, read, write};
 use std::path::{Component, Path, PathBuf};
 use std::rc::Rc;
 
-use super::content::FileContent;
+use super::content::{EntryContent, WorkspaceMap};
 
 pub(crate) struct RenderedWorkspace {
-    files: HashMap<PathBuf, FileContent>,
+    files: WorkspaceMap,
 }
 
 impl RenderedWorkspace {
-    pub(crate) fn new(files: HashMap<PathBuf, FileContent>) -> Self {
-        Self { files }
+    pub(crate) fn new(files: WorkspaceMap) -> Result<Self> {
+        if files
+            .values()
+            .any(|entry| matches!(entry.content, EntryContent::Template(_)))
+        {
+            anyhow::bail!("Workspace contains an unrendered template");
+        }
+        Ok(Self { files })
     }
 
     pub(crate) fn contains_directory(&self, path: &Path) -> bool {
@@ -24,7 +29,7 @@ impl RenderedWorkspace {
         if self
             .files
             .get(&path)
-            .is_some_and(|content| matches!(content, FileContent::None))
+            .is_some_and(|entry| matches!(entry.content, EntryContent::Directory))
         {
             return true;
         }
@@ -34,11 +39,12 @@ impl RenderedWorkspace {
             .any(|candidate| candidate != &path && candidate.starts_with(&path))
     }
 
-    pub(crate) fn flush_to_disk(&self, target: &Path) -> Result<()> {
-        for (path, content) in &self.files {
+    pub(crate) fn write_to(&self, target: &Path) -> Result<WorkspaceWriteSummary> {
+        let mut summary = WorkspaceWriteSummary::default();
+        for (path, entry) in &self.files {
             let full_path = target.join(path);
-            match content {
-                FileContent::BinaryLazy {
+            match &entry.content {
+                EntryContent::BinaryLazy {
                     path: source_path,
                     cache,
                 } => {
@@ -51,30 +57,37 @@ impl RenderedWorkspace {
                     let bytes = cache
                         .get()
                         .context("Binary cache was not initialized after read")?;
-                    if let Some(parent) = full_path.parent() {
-                        create_dir_all(parent)?;
-                    }
-                    write(full_path, bytes.as_ref())?;
+                    write_file(&full_path, bytes.as_ref(), entry)?;
+                    summary.files_written += 1;
                 }
-                FileContent::Binary(bytes) => {
-                    if let Some(parent) = full_path.parent() {
-                        create_dir_all(parent)?;
-                    }
-                    write(full_path, bytes.as_ref())?;
+                EntryContent::Rendered(bytes) => {
+                    write_file(&full_path, bytes.as_ref(), entry)?;
+                    summary.files_written += 1;
                 }
-                FileContent::None => {
-                    create_dir_all(full_path)?;
+                EntryContent::Directory => {
+                    create_dir_all(&full_path)?;
+                    entry.apply_permissions(&full_path)?;
+                    summary.directories_created += 1;
                 }
-                FileContent::Template(_) => {
-                    eprintln!(
-                        "WARNING: Found unrendered template at {}. Skipping.",
-                        path.display()
-                    );
-                }
+                EntryContent::Template(_) => unreachable!("RenderedWorkspace rejects templates"),
             }
         }
-        Ok(())
+        Ok(summary)
     }
+}
+
+#[derive(Debug, Default)]
+pub(crate) struct WorkspaceWriteSummary {
+    pub(crate) files_written: usize,
+    pub(crate) directories_created: usize,
+}
+
+fn write_file(path: &Path, bytes: &[u8], entry: &super::content::WorkspaceEntry) -> Result<()> {
+    if let Some(parent) = path.parent() {
+        create_dir_all(parent)?;
+    }
+    write(path, bytes)?;
+    entry.apply_permissions(path)
 }
 
 fn normalize_directory_path(path: &Path) -> PathBuf {
@@ -92,13 +105,15 @@ fn normalize_directory_path(path: &Path) -> PathBuf {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::workspace::content::WorkspaceEntry;
 
     #[test]
     fn detects_rendered_directories_from_descendants() {
-        let workspace = RenderedWorkspace::new(HashMap::from([(
+        let workspace = RenderedWorkspace::new(WorkspaceMap::from([(
             PathBuf::from("backend/pyproject.toml"),
-            FileContent::Binary(Rc::<[u8]>::from(Vec::<u8>::new())),
-        )]));
+            WorkspaceEntry::rendered(Rc::<[u8]>::from(Vec::<u8>::new())),
+        )]))
+        .unwrap();
 
         assert!(workspace.contains_directory(Path::new(".")));
         assert!(workspace.contains_directory(Path::new("backend")));

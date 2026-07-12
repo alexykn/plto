@@ -222,7 +222,7 @@ pub fn run(options: RunOptions) -> Result<()> {
 
     let mut guard = ProjectGuard::new(exec_ctx.target_path.clone(), target_state.cleanup_policy());
     std::fs::create_dir_all(&exec_ctx.target_path)?;
-    rendered.flush_to_disk(&exec_ctx.target_path)?;
+    rendered.write_to(&exec_ctx.target_path)?;
     run_setup_plan(
         &global_config,
         &setup_plan,

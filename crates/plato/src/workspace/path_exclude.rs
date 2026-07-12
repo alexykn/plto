@@ -1,15 +1,15 @@
 use anyhow::{Result, bail};
 use serde_json::Value;
-use std::collections::{BTreeMap, HashMap};
-use std::path::{Path, PathBuf};
+use std::collections::BTreeMap;
+use std::path::Path;
 
 use crate::config::PathExcludeConfig;
 use crate::context::TemplateContext;
 use crate::fs::path::reject_parent_components;
-use crate::workspace::content::FileContent;
+use crate::workspace::content::WorkspaceMap;
 
 pub(super) fn apply_path_excludes(
-    files: &mut HashMap<PathBuf, FileContent>,
+    files: &mut WorkspaceMap,
     template_context: &TemplateContext,
     excludes: &BTreeMap<String, PathExcludeConfig>,
 ) -> Result<()> {
@@ -61,22 +61,26 @@ fn validate_exclude_path(name: &str, path: &Path) -> Result<()> {
 mod tests {
     use super::*;
     use crate::context::TemplateContext;
-    use std::rc::Rc;
+    use crate::workspace::content::WorkspaceEntry;
+    use std::path::PathBuf;
 
-    fn content() -> HashMap<PathBuf, FileContent> {
-        HashMap::from([
+    fn content() -> WorkspaceMap {
+        WorkspaceMap::from([
             (
                 PathBuf::from("Dockerfile"),
-                FileContent::Binary(Rc::from([])),
+                WorkspaceEntry::rendered(Vec::<u8>::new()),
             ),
-            (PathBuf::from("src"), FileContent::None),
+            (
+                PathBuf::from("src"),
+                WorkspaceEntry::rendered(Vec::<u8>::new()),
+            ),
             (
                 PathBuf::from("src/main.py"),
-                FileContent::Binary(Rc::from([])),
+                WorkspaceEntry::rendered(Vec::<u8>::new()),
             ),
             (
                 PathBuf::from("README.md"),
-                FileContent::Binary(Rc::from([])),
+                WorkspaceEntry::rendered(Vec::<u8>::new()),
             ),
         ])
     }

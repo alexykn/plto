@@ -65,9 +65,9 @@ pub(crate) fn build_template_context_parts(
 }
 
 pub(crate) fn render_workspace(ctx: &WorkspaceRenderContext) -> Result<RenderedWorkspace> {
-    Ok(WorkspaceBuilder::from_source(&ctx.source_path)?
+    WorkspaceBuilder::from_source(&ctx.source_path)?
         .exclude_paths(&ctx.template_context, &ctx.path_excludes)?
         .rewrite_paths(&ctx.template_context, &ctx.path_replacements)?
         .render_templates(&ctx.template_context)?
-        .build())
+        .build()
 }
