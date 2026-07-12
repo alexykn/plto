@@ -20,6 +20,7 @@ use crate::config::group::apply_group_configs;
 use crate::context::{ContextMap, ContextOverrides};
 use crate::plugins::discovery::load_global_config;
 use crate::setup::plan::SetupPlan;
+use crate::setup::preflight::preflight_setup_plan;
 use crate::setup::runner::{SetupRunnerContext, run_setup_plan};
 use crate::source::TemplateRequest;
 use crate::source::TemplateResolver;
@@ -222,14 +223,14 @@ pub fn run(options: RunOptions) -> Result<()> {
     let setup_plan = SetupPlan::from_config(&exec_ctx.config, &exec_ctx.target_path)?;
     validate_setup_sources(&setup_plan, &rendered)?;
     let global_config = load_global_config()?;
+    let resolved_setup = preflight_setup_plan(&global_config, &setup_plan)?;
 
     let mut target =
         TargetTransaction::begin(exec_ctx.target_path.clone(), exec_ctx.existing_target)?;
     let initialization = (|| {
         rendered.write_to(target.path())?;
         run_setup_plan(
-            &global_config,
-            &setup_plan,
+            &resolved_setup,
             &SetupRunnerContext {
                 project_name: exec_ctx.project_name.clone(),
                 target_path: target.path().to_path_buf(),

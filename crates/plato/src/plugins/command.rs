@@ -1,6 +1,6 @@
 use anyhow::{Context, Result, anyhow, bail};
 use plato_plugin_api::{
-    PLUGIN_API_VERSION, PluginMetadata, PluginSetupRequest, PluginSetupResponse,
+    PLUGIN_API_VERSION, PluginCapability, PluginMetadata, PluginSetupRequest, PluginSetupResponse,
 };
 use std::io::{Read, Write};
 use std::path::Path;
@@ -8,6 +8,7 @@ use std::process::{Child, Command, Stdio};
 use std::thread;
 use std::time::Duration;
 
+use crate::plugins::id::PluginId;
 use crate::process::{spawn, wait_with_timeout};
 
 pub(crate) fn read_metadata(command: &Path, timeout: Duration) -> Result<PluginMetadata> {
@@ -34,6 +35,20 @@ pub(crate) fn read_metadata(command: &Path, timeout: Duration) -> Result<PluginM
             command.display()
         )
     })?;
+    Ok(metadata)
+}
+
+pub(crate) fn validate_setup_metadata(
+    expected: &PluginId,
+    metadata: &PluginMetadata,
+) -> Result<()> {
+    if metadata.name != expected.as_str() {
+        bail!(
+            "Plugin metadata name {:?} does not match requested plugin {:?}",
+            metadata.name,
+            expected.as_str()
+        );
+    }
     if !metadata
         .supported_api_versions
         .contains(&PLUGIN_API_VERSION)
@@ -44,7 +59,13 @@ pub(crate) fn read_metadata(command: &Path, timeout: Duration) -> Result<PluginM
             PLUGIN_API_VERSION
         );
     }
-    Ok(metadata)
+    if !metadata.capabilities.contains(&PluginCapability::Setup) {
+        bail!(
+            "Plugin {} does not advertise setup capability",
+            metadata.name
+        );
+    }
+    Ok(())
 }
 
 pub(crate) fn run_setup(
@@ -115,4 +136,35 @@ fn collect_output(handle: thread::JoinHandle<std::io::Result<Vec<u8>>>) -> Resul
         .join()
         .map_err(|_| anyhow!("Plugin stdout reader panicked"))?
         .context("Failed to read plugin stdout")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn metadata() -> PluginMetadata {
+        PluginMetadata {
+            name: "uv".to_string(),
+            version: "1.0.0".to_string(),
+            supported_api_versions: vec![PLUGIN_API_VERSION],
+            capabilities: vec![PluginCapability::Setup],
+            description: None,
+        }
+    }
+
+    #[test]
+    fn rejects_mismatched_metadata_names() {
+        let error =
+            validate_setup_metadata(&PluginId::parse("pip").unwrap(), &metadata()).unwrap_err();
+        assert!(error.to_string().contains("does not match"));
+    }
+
+    #[test]
+    fn rejects_plugins_without_setup_capability() {
+        let mut metadata = metadata();
+        metadata.capabilities.clear();
+        let error =
+            validate_setup_metadata(&PluginId::parse("uv").unwrap(), &metadata).unwrap_err();
+        assert!(error.to_string().contains("setup capability"));
+    }
 }

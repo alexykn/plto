@@ -2,13 +2,9 @@ use anyhow::{Context, Result};
 use plato_plugin_api::{PLUGIN_API_VERSION, PluginEnvironment, PluginOptions, PluginSetupRequest};
 use std::path::{Path, PathBuf};
 
-use crate::config::GlobalConfig;
 use crate::context::TemplateContext;
-use crate::plugins::command::{read_metadata, run_setup};
-use crate::plugins::discovery::resolve_plugin_command;
-use crate::setup::plan::SetupPlan;
-
-const DEFAULT_PLUGIN_METADATA_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(30);
+use crate::plugins::command::run_setup;
+use crate::setup::preflight::ResolvedSetupPlan;
 
 #[derive(Debug, Clone)]
 pub(crate) struct SetupRunnerContext {
@@ -20,23 +16,17 @@ pub(crate) struct SetupRunnerContext {
     pub(crate) verbose: bool,
 }
 
-pub(crate) fn run_setup_plan(
-    global_config: &GlobalConfig,
-    plan: &SetupPlan,
-    ctx: &SetupRunnerContext,
-) -> Result<()> {
-    for step in &plan.steps {
-        let plugin_command = resolve_plugin_command(global_config, &step.plugin)?;
+pub(crate) fn run_setup_plan(plan: &ResolvedSetupPlan, ctx: &SetupRunnerContext) -> Result<()> {
+    for resolved in &plan.steps {
+        let step = &resolved.step;
         if ctx.verbose {
             eprintln!(
                 "Running plugin {} from {:?}: {}",
                 step.plugin,
-                plugin_command.kind,
-                plugin_command.command.display()
+                resolved.kind,
+                resolved.command.display()
             );
         }
-        let metadata = read_metadata(&plugin_command.command, DEFAULT_PLUGIN_METADATA_TIMEOUT)
-            .with_context(|| format!("Failed to read metadata for plugin {}", step.plugin))?;
         let request = PluginSetupRequest {
             api_version: PLUGIN_API_VERSION,
             plugin: step.plugin.to_string(),
@@ -58,8 +48,8 @@ pub(crate) fn run_setup_plan(
                 arch: std::env::consts::ARCH.to_string(),
             },
         };
-        let response = run_setup(&plugin_command.command, &request, step.timeout)
-            .with_context(|| format!("Failed to run plugin {}", metadata.name))?;
+        let response = run_setup(&resolved.command, &request, step.timeout)
+            .with_context(|| format!("Failed to run plugin {}", resolved.metadata.name))?;
         for message in response.messages {
             println!("{message}");
         }
