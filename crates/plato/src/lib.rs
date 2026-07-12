@@ -5,26 +5,26 @@ use std::path::PathBuf;
 pub(crate) mod config;
 pub(crate) mod context;
 pub(crate) mod fs;
-pub(crate) mod guard;
 pub(crate) mod names;
 pub mod plugins;
 pub(crate) mod rendering;
 pub(crate) mod setup;
 pub(crate) mod source;
+pub(crate) mod target;
 pub(crate) mod util;
 pub(crate) mod workspace;
 
 use crate::config::Config;
 use crate::config::group::apply_group_configs;
 use crate::context::{ContextMap, ContextOverrides};
-use crate::guard::ProjectGuard;
 use crate::plugins::discovery::load_global_config;
 use crate::setup::plan::SetupPlan;
 use crate::setup::runner::{SetupRunnerContext, run_setup_plan};
 use crate::source::TemplateRequest;
 use crate::source::TemplateResolver;
 use crate::source::git::TempCheckout;
-use crate::util::{open_config_file, validate_target_path};
+use crate::target::{ExistingTargetPolicy, TargetTransaction};
+use crate::util::open_config_file;
 use crate::workspace::{WorkspaceRenderContext, render_workspace};
 
 #[derive(Clone, Debug)]
@@ -212,30 +212,38 @@ pub fn display_templates(verbose: bool) -> Result<()> {
 /// template rendering, or project setup fails.
 pub fn run(options: RunOptions) -> Result<()> {
     let exec_ctx = ExecutionContext::try_from(options)?;
-    let target_state = validate_target_path(&exec_ctx.target_path, exec_ctx.force)?;
-
     let render_ctx = WorkspaceRenderContext::from(&exec_ctx);
     let rendered = render_workspace(&render_ctx)?;
     let setup_plan = SetupPlan::from_config(&exec_ctx.config, &exec_ctx.target_path)?;
     validate_setup_sources(&setup_plan, &rendered)?;
     let global_config = load_global_config()?;
 
-    let mut guard = ProjectGuard::new(exec_ctx.target_path.clone(), target_state.cleanup_policy());
-    std::fs::create_dir_all(&exec_ctx.target_path)?;
-    rendered.write_to(&exec_ctx.target_path)?;
-    run_setup_plan(
-        &global_config,
-        &setup_plan,
-        &SetupRunnerContext {
-            project_name: exec_ctx.project_name.clone(),
-            target_path: exec_ctx.target_path.clone(),
-            template_path: exec_ctx.source_path.clone(),
-            template_context: render_ctx.template_context,
-            dry_run: false,
-            verbose: false,
-        },
-    )?;
-    guard.release();
+    let policy = if exec_ctx.force {
+        ExistingTargetPolicy::Replace
+    } else {
+        ExistingTargetPolicy::Reject
+    };
+    let mut target = TargetTransaction::begin(exec_ctx.target_path.clone(), policy)?;
+    let initialization = (|| {
+        rendered.write_to(target.path())?;
+        run_setup_plan(
+            &global_config,
+            &setup_plan,
+            &SetupRunnerContext {
+                project_name: exec_ctx.project_name.clone(),
+                target_path: target.path().to_path_buf(),
+                template_path: exec_ctx.source_path.clone(),
+                template_context: render_ctx.template_context,
+                dry_run: false,
+                verbose: false,
+            },
+        )?;
+        Ok(())
+    })();
+    if let Err(error) = initialization {
+        return Err(target.rollback_error(error));
+    }
+    target.commit()?;
     Ok(())
 }
 

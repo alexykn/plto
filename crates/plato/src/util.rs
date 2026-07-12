@@ -7,8 +7,6 @@ use std::path::Path;
 use std::process::Command;
 use std::sync::LazyLock;
 
-use crate::guard::CleanupPolicy;
-
 static ALLOWED_CMD_RE: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"^(git|cargo|uv|python\d*(?:\.\d+)*)$").expect("Invalid regex pattern")
 });
@@ -82,34 +80,4 @@ where
         bail!("Command {cmd} failed with status {status}");
     }
     Ok(())
-}
-
-#[derive(Debug, Clone, Copy)]
-pub(crate) enum TargetState {
-    CreatedByRun,
-    PreExisting,
-}
-
-impl TargetState {
-    pub(crate) fn cleanup_policy(self) -> CleanupPolicy {
-        match self {
-            Self::CreatedByRun => CleanupPolicy::RemoveTargetOnFailure,
-            Self::PreExisting => CleanupPolicy::PreserveTargetOnFailure,
-        }
-    }
-}
-
-pub(crate) fn validate_target_path(target_path: &Path, force: bool) -> Result<TargetState> {
-    if target_path.exists() {
-        if force {
-            return Ok(TargetState::PreExisting);
-        }
-
-        bail!(
-            "Target path {} already exists. quitting.",
-            &target_path.display()
-        );
-    }
-
-    Ok(TargetState::CreatedByRun)
 }
