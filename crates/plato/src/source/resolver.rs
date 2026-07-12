@@ -1,4 +1,5 @@
 use anyhow::{Context, Result, bail};
+use std::fs::metadata;
 use std::path::{Path, PathBuf};
 
 use crate::config::{
@@ -104,7 +105,7 @@ impl TemplateResolver {
                 if cli_rev.is_some() || cli_subpath.is_some() {
                     bail!("--rev and --subpath cannot be used with local template {name:?}");
                 }
-                let source_path = expand_tilde(path)?;
+                let source_path = resolve_template_directory(path, &format!("template {name:?}"))?;
                 let config = select_named_config(name, &source_path, record)?;
                 Ok(PreparedTemplateSource {
                     source_path,
@@ -154,7 +155,7 @@ impl TemplateResolver {
     }
 
     fn prepare_ad_hoc_path(path: &Path) -> Result<PreparedTemplateSource> {
-        let source_path = expand_tilde(path)?;
+        let source_path = resolve_template_directory(path, "--path template")?;
         let config = select_ad_hoc_config(&source_path, "--path template")?;
         Ok(PreparedTemplateSource {
             source_path,
@@ -164,11 +165,35 @@ impl TemplateResolver {
     }
 }
 
+pub(crate) fn resolve_template_directory(path: &Path, label: &str) -> Result<PathBuf> {
+    let expanded = expand_tilde(path)?;
+    let metadata = metadata(&expanded)
+        .with_context(|| format!("Could not inspect {label} at {}", expanded.display()))?;
+    if !metadata.is_dir() {
+        bail!("{label} at {} is not a directory", expanded.display());
+    }
+    expanded
+        .canonicalize()
+        .with_context(|| format!("Could not canonicalize {label} at {}", expanded.display()))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::config::{GlobalConfig, TemplateEntry};
     use std::collections::HashMap;
+    use std::fs::{create_dir_all, remove_dir_all, write};
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    fn temp_root(label: &str) -> PathBuf {
+        let unique = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let root = std::env::temp_dir().join(format!("plato-resolver-{label}-{unique}"));
+        create_dir_all(&root).unwrap();
+        root
+    }
 
     #[test]
     fn named_template_does_not_infer_git() {
@@ -202,5 +227,17 @@ mod tests {
             .config_path_for("api")
             .unwrap();
         assert!(path.ends_with("api.toml"));
+    }
+
+    #[test]
+    fn rejects_regular_files_as_template_directories() {
+        let root = temp_root("regular-file");
+        let path = root.join("template.txt");
+        write(&path, "not a directory").unwrap();
+
+        let error = resolve_template_directory(&path, "--path template").unwrap_err();
+
+        assert!(error.to_string().contains("is not a directory"));
+        remove_dir_all(root).unwrap();
     }
 }
