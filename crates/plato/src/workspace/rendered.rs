@@ -41,6 +41,7 @@ impl RenderedWorkspace {
 
     pub(crate) fn write_to(&self, target: &Path) -> Result<WorkspaceWriteSummary> {
         let mut summary = WorkspaceWriteSummary::default();
+        let mut directories = Vec::new();
         for (path, entry) in &self.files {
             let full_path = target.join(path);
             match &entry.content {
@@ -66,11 +67,14 @@ impl RenderedWorkspace {
                 }
                 EntryContent::Directory => {
                     create_dir_all(&full_path)?;
-                    entry.apply_permissions(&full_path)?;
+                    directories.push((full_path, entry));
                     summary.directories_created += 1;
                 }
                 EntryContent::Template(_) => unreachable!("RenderedWorkspace rejects templates"),
             }
+        }
+        for (path, entry) in directories {
+            entry.apply_permissions(&path)?;
         }
         Ok(summary)
     }

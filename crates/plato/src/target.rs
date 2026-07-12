@@ -62,13 +62,14 @@ impl TargetTransaction {
     }
 
     pub(crate) fn commit(&mut self) -> Result<TargetCommitOutcome> {
-        let outcome = if let Some(backup) = self.backup.take() {
-            remove_dir_all(&backup).with_context(|| {
+        let outcome = if let Some(backup) = &self.backup {
+            remove_dir_all(backup).with_context(|| {
                 format!(
                     "Could not remove replaced target backup {}",
                     backup.display()
                 )
             })?;
+            self.backup = None;
             TargetCommitOutcome::Replaced
         } else {
             TargetCommitOutcome::Created

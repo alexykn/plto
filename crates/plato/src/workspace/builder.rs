@@ -202,6 +202,18 @@ fn is_reserved_plato_config_path(rel_path: &Path) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fs::{create_dir_all, remove_dir_all, write};
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    fn temp_root(label: &str) -> PathBuf {
+        let unique = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let root = std::env::temp_dir().join(format!("plato-builder-{label}-{unique}"));
+        create_dir_all(&root).unwrap();
+        root
+    }
 
     #[test]
     fn identifies_root_plato_config_files_as_reserved() {
@@ -217,5 +229,22 @@ mod tests {
             "groups/plato.docker.toml"
         )));
         assert!(!is_reserved_plato_config_path(Path::new("plato.template")));
+    }
+
+    #[test]
+    fn rejects_binary_and_template_output_collisions() {
+        let root = temp_root("collision");
+        write(root.join("foo"), "binary").unwrap();
+        write(root.join("foo.j2"), "template").unwrap();
+
+        let result = WorkspaceBuilder::from_source(&root)
+            .unwrap()
+            .render_templates(&TemplateContext::new());
+        let Err(error) = result else {
+            panic!("expected an output collision");
+        };
+
+        assert!(error.to_string().contains("Output path collision"));
+        remove_dir_all(root).unwrap();
     }
 }

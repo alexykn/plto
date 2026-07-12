@@ -1,6 +1,6 @@
 use anyhow::{Result, bail};
 use std::env::current_dir;
-use std::path::PathBuf;
+use std::path::{Component, Path, PathBuf};
 
 pub(crate) mod config;
 pub(crate) mod context;
@@ -141,6 +141,10 @@ impl TryFrom<RunOptions> for ExecutionContext {
 }
 
 fn target_path_for_project(project_name: &str) -> Result<PathBuf> {
+    let mut components = Path::new(project_name).components();
+    if !matches!(components.next(), Some(Component::Normal(_))) || components.next().is_some() {
+        bail!("Project name {project_name:?} must be a single relative directory name");
+    }
     Ok(current_dir()?.join(project_name))
 }
 
@@ -392,5 +396,18 @@ impl From<&PreparedTemplateContext> for WorkspaceRenderContext {
             path_excludes: ctx.config.path.exclude.clone(),
             source_path: ctx.source_path.clone(),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn rejects_project_names_that_escape_the_current_directory() {
+        assert!(target_path_for_project("../outside").is_err());
+        assert!(target_path_for_project("nested/project").is_err());
+        assert!(target_path_for_project("/").is_err());
+        assert!(target_path_for_project("project").is_ok());
     }
 }
