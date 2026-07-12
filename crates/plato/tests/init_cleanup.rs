@@ -106,3 +106,29 @@ fn force_rejects_a_symlink_target() {
     assert!(String::from_utf8_lossy(&output.stderr).contains("must not be a symlink"));
     assert!(!env.root().join("outside/new.txt").exists());
 }
+
+#[cfg(unix)]
+#[test]
+fn preserves_executable_file_permissions() {
+    use std::os::unix::fs::PermissionsExt;
+
+    let env = TestEnv::new("init-executable-file");
+    env.write("template/plato.toml", "");
+    env.write("template/tool", "#!/bin/sh\necho plato\n");
+    let source = env.root().join("template/tool");
+    let mut permissions = std::fs::metadata(&source).unwrap().permissions();
+    permissions.set_mode(0o755);
+    std::fs::set_permissions(source, permissions).unwrap();
+
+    let output = env
+        .command()
+        .args(["init", "--path", "template", "generated"])
+        .output()
+        .expect("plato should run");
+
+    assert!(output.status.success());
+    let permissions = std::fs::metadata(env.root().join("generated/tool"))
+        .unwrap()
+        .permissions();
+    assert_eq!(permissions.mode() & 0o111, 0o111);
+}
