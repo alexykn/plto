@@ -333,6 +333,7 @@ dependencies = [
  "fs2",
  "fs_extra",
  "home",
+ "libc",
  "minijinja",
  "plato-plugin-api",
  "regex",
@@ -412,6 +413,7 @@ name = "plato-plugin-support"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "libc",
  "plato-plugin-api",
  "serde",
  "serde_json",

@@ -10,3 +10,4 @@ anyhow.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 plato-plugin-api = { path = "../plato-plugin-api" }
+libc.workspace = true

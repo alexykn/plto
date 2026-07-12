@@ -6,6 +6,9 @@ use std::process::{Child, Command, ExitStatus, Stdio};
 use std::thread;
 use std::time::{Duration, Instant};
 
+#[cfg(unix)]
+use std::os::unix::process::CommandExt;
+
 /// Runs a command in `workdir`, forwarding stdout and stderr to stderr.
 ///
 /// # Errors
@@ -38,11 +41,14 @@ where
         .into_iter()
         .map(|arg| arg.as_ref().to_os_string())
         .collect::<Vec<OsString>>();
-    let mut child = Command::new(program)
+    let mut command = Command::new(program);
+    command
         .args(&args)
         .current_dir(workdir)
         .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
+        .stderr(Stdio::piped());
+    configure_process_group(&mut command);
+    let mut child = command
         .spawn()
         .with_context(|| format!("Failed to execute {program}"))?;
 
@@ -57,9 +63,12 @@ where
     let stdout_forwarder = forward_to_stderr(stdout);
     let stderr_forwarder = forward_to_stderr(stderr);
 
-    let status = wait_for_child(&mut child, timeout, program)?;
-    join_forwarder(stdout_forwarder)?;
-    join_forwarder(stderr_forwarder)?;
+    let status = wait_for_child(&mut child, timeout, program);
+    let stdout_result = join_forwarder(stdout_forwarder);
+    let stderr_result = join_forwarder(stderr_forwarder);
+    let status = status?;
+    stdout_result?;
+    stderr_result?;
 
     if !status.success() {
         let rendered_args = args
@@ -109,8 +118,7 @@ fn wait_for_child(
         }
 
         if started.elapsed() >= timeout {
-            let _ = child.kill();
-            let _ = child.wait();
+            terminate_process_tree(child, program)?;
             bail!(
                 "Command {program} timed out after {} seconds",
                 timeout.as_secs()
@@ -119,4 +127,36 @@ fn wait_for_child(
 
         thread::sleep(Duration::from_millis(50));
     }
+}
+
+fn terminate_process_tree(child: &mut Child, program: &str) -> Result<()> {
+    #[cfg(unix)]
+    {
+        let result = unsafe { libc::kill(-(child.id() as i32), libc::SIGKILL) };
+        if result != 0 {
+            let error = std::io::Error::last_os_error();
+            if error.kind() != std::io::ErrorKind::NotFound {
+                return Err(error)
+                    .with_context(|| format!("Failed to terminate process group for {program}"));
+            }
+        }
+    }
+
+    #[cfg(not(unix))]
+    child
+        .kill()
+        .with_context(|| format!("Failed to terminate {program}"))?;
+
+    child
+        .wait()
+        .with_context(|| format!("Failed to reap timed out {program}"))?;
+    Ok(())
+}
+
+fn configure_process_group(command: &mut Command) {
+    #[cfg(unix)]
+    command.process_group(0);
+
+    #[cfg(not(unix))]
+    let _ = command;
 }

@@ -1,9 +1,13 @@
-use anyhow::{Result, bail};
+use anyhow::Result;
 use std::path::PathBuf;
 use std::process::Command;
+use std::time::Duration;
 
 use crate::plugins::id::PluginId;
 use crate::plugins::paths::managed_plugin_root;
+use crate::process::run_status as run_process_status;
+
+const PLUGIN_INSTALL_TIMEOUT: Duration = Duration::from_secs(600);
 
 #[derive(Debug, Clone)]
 pub enum PluginInstallBackend {
@@ -80,9 +84,6 @@ fn install_git(url: &str) -> Result<()> {
 }
 
 fn run_status(command: &mut Command) -> Result<()> {
-    let status = command.status()?;
-    if !status.success() {
-        bail!("Plugin install command failed");
-    }
+    run_process_status(command, PLUGIN_INSTALL_TIMEOUT, "plugin install command")?;
     Ok(())
 }

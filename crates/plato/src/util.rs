@@ -6,6 +6,11 @@ use std::fs::{File, create_dir_all};
 use std::path::Path;
 use std::process::Command;
 use std::sync::LazyLock;
+use std::time::Duration;
+
+use crate::process::run_status;
+
+const DEFAULT_EXTERNAL_COMMAND_TIMEOUT: Duration = Duration::from_secs(300);
 
 static ALLOWED_CMD_RE: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"^(git|cargo|uv|python\d*(?:\.\d+)*)$").expect("Invalid regex pattern")
@@ -71,13 +76,12 @@ where
     if !ALLOWED_CMD_RE.is_match(cmd_name) {
         bail!("Selected command '{cmd}' is not allowed");
     }
-    let status = Command::new(cmd)
-        .args(args)
-        .current_dir(target)
-        .status()
-        .context(format!("Unable to run command {cmd}"))?;
-    if !status.success() {
-        bail!("Command {cmd} failed with status {status}");
-    }
+    let mut command = Command::new(cmd);
+    command.args(args).current_dir(target);
+    run_status(
+        &mut command,
+        DEFAULT_EXTERNAL_COMMAND_TIMEOUT,
+        &format!("command {cmd}"),
+    )?;
     Ok(())
 }

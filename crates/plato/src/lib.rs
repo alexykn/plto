@@ -7,6 +7,7 @@ pub(crate) mod context;
 pub(crate) mod fs;
 pub(crate) mod names;
 pub mod plugins;
+pub(crate) mod process;
 pub(crate) mod rendering;
 pub(crate) mod setup;
 pub(crate) mod source;
