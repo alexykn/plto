@@ -65,6 +65,31 @@ fn malformed_global_config_fails() {
 }
 
 #[test]
+fn global_config_rejects_unknown_and_ambiguous_template_fields() {
+    let unknown = r#"
+    [plato]
+    default_git_providre = "gitlab"
+    "#;
+    assert!(toml::from_str::<GlobalConfig>(unknown).is_err());
+
+    let ambiguous = r#"
+    [templates]
+    app = { path = "templates/app", git = "github:org/app" }
+    "#;
+    assert!(toml::from_str::<GlobalConfig>(ambiguous).is_err());
+}
+
+#[test]
+fn global_config_rejects_orphan_template_config_entries() {
+    let raw = r#"
+    [template_configs]
+    missing = "template.toml"
+    "#;
+    let config: GlobalConfig = toml::from_str(raw).unwrap();
+    assert!(config.validate().is_err());
+}
+
+#[test]
 fn deserializes_template_path_replacements() {
     let raw = r#"
 [template.context]
