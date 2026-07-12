@@ -4,6 +4,8 @@ use std::path::Path;
 use toml::{Value, map::Map};
 
 use crate::config::get_global_config_path;
+use crate::plugins::command::{read_metadata, validate_setup_metadata};
+use crate::plugins::discovery::validate_plugin_executable;
 use crate::plugins::id::PluginId;
 
 /// Registers an explicit plugin executable path in global config.
@@ -13,6 +15,9 @@ use crate::plugins::id::PluginId;
 /// or the existing config shape is incompatible with a plugin registry.
 pub fn register_plugin(name: &str, command: &Path) -> Result<()> {
     let plugin = PluginId::parse(name.to_string())?;
+    let command = validate_plugin_executable(command)?;
+    let metadata = read_metadata(&command, std::time::Duration::from_secs(30))?;
+    validate_setup_metadata(&plugin, &metadata)?;
     let path = get_global_config_path()?;
     let mut root = load_global_toml(&path)?;
     let table = root

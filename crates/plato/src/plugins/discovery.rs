@@ -59,6 +59,20 @@ pub(crate) fn resolve_plugin_command(
     )
 }
 
+pub(crate) fn validate_plugin_executable(path: &Path) -> Result<PathBuf> {
+    let command = expand_tilde(path)?;
+    let command = command
+        .canonicalize()
+        .with_context(|| format!("Could not resolve plugin executable {}", command.display()))?;
+    if !is_executable_file(&command) {
+        bail!(
+            "Plugin executable {} is not an executable file",
+            command.display()
+        );
+    }
+    Ok(command)
+}
+
 pub(crate) fn discover_path_plugins() -> Vec<PathBuf> {
     let mut plugins = Vec::new();
     let Some(path) = env::var_os("PATH") else {
