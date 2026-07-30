@@ -7,7 +7,7 @@ use crate::plugins::id::PluginId;
 use crate::plugins::paths::managed_plugin_root;
 use crate::process::run_status as run_process_status;
 
-const PLUGIN_INSTALL_TIMEOUT: Duration = Duration::from_secs(600);
+const PLUGIN_INSTALL_TIMEOUT: Duration = Duration::from_mins(10);
 
 #[derive(Debug, Clone)]
 pub enum PluginInstallBackend {

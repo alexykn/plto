@@ -1,0 +1,19 @@
+[package]
+name = "plto-plugin-precommit"
+version = "0.1.1"
+description = "pre-commit setup plugin for Plato"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[[bin]]
+name = "plto-plugin-precommit"
+path = "src/main.rs"
+
+[dependencies]
+anyhow.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+plto-plugin-api.workspace = true
+plto-plugin-support.workspace = true

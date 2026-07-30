@@ -88,7 +88,7 @@ pub(crate) fn discover_path_plugins() -> Vec<PathBuf> {
             let Some(file_name) = file_name.to_str() else {
                 continue;
             };
-            if file_name.starts_with("plato-plugin-") && is_executable_file(&entry.path()) {
+            if file_name.starts_with("plto-plugin-") && is_executable_file(&entry.path()) {
                 plugins.push(entry.path());
             }
         }

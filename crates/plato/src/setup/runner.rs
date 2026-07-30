@@ -1,5 +1,5 @@
 use anyhow::{Context, Result};
-use plato_plugin_api::{PLUGIN_API_VERSION, PluginEnvironment, PluginOptions, PluginSetupRequest};
+use plto_plugin_api::{PLUGIN_API_VERSION, PluginEnvironment, PluginOptions, PluginSetupRequest};
 use std::path::{Path, PathBuf};
 
 use crate::context::TemplateContext;

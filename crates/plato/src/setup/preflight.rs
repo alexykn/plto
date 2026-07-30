@@ -1,5 +1,5 @@
 use anyhow::{Context, Result};
-use plato_plugin_api::PluginMetadata;
+use plto_plugin_api::PluginMetadata;
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 

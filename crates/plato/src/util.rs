@@ -10,7 +10,7 @@ use std::time::Duration;
 
 use crate::process::run_status;
 
-const DEFAULT_EXTERNAL_COMMAND_TIMEOUT: Duration = Duration::from_secs(300);
+const DEFAULT_EXTERNAL_COMMAND_TIMEOUT: Duration = Duration::from_mins(5);
 
 static ALLOWED_CMD_RE: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"^(git|cargo|uv|python\d*(?:\.\d+)*)$").expect("Invalid regex pattern")

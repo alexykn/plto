@@ -38,6 +38,7 @@ pub struct GitOptions {
 }
 
 impl GitOptions {
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         self.revision.is_none() && self.subpath.is_none()
     }
@@ -338,7 +339,7 @@ pub fn display_plugins() -> Result<()> {
         for entry in std::fs::read_dir(&managed_dir)? {
             let entry = entry?;
             let name = entry.file_name().to_string_lossy().to_string();
-            if name.starts_with("plato-plugin-") {
+            if name.starts_with("plto-plugin-") {
                 entries.push((
                     plugin_name_from_executable(&name),
                     1,
@@ -362,7 +363,7 @@ pub fn display_plugins() -> Result<()> {
     entries.sort();
     entries.dedup();
     if entries.is_empty() {
-        println!("No plugins discovered. Install one with: plato plugin install <name>");
+        println!("No plugins discovered. Install one with: plto plugin install <name>");
         return Ok(());
     }
     let mut effective = std::collections::BTreeSet::new();
@@ -378,7 +379,7 @@ pub fn display_plugins() -> Result<()> {
 }
 
 fn plugin_name_from_executable(file_name: &str) -> String {
-    let name = file_name.trim_start_matches("plato-plugin-");
+    let name = file_name.trim_start_matches("plto-plugin-");
     name.strip_suffix(std::env::consts::EXE_SUFFIX)
         .unwrap_or(name)
         .to_string()

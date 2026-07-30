@@ -51,7 +51,7 @@ include_docs = true
 CLI overrides:
 
 ```bash
-plato init api my-api -s include_docs=false --set-string version=1.0
+plto init api my-api -s include_docs=false --set-string version=1.0
 ```
 
 ## Path rewrites
@@ -104,7 +104,7 @@ timeout_secs = 600
 
 Fields:
 
-- `plugin`: plugin name; Plato resolves `uv` to `plato-plugin-uv`.
+- `plugin`: plugin name; Plato resolves `uv` to `plto-plugin-uv`.
 - `source_path`: optional relative path inside the generated project. Defaults to `.`. The directory must exist in the rendered workspace.
 - `timeout_secs`: optional plugin setup timeout. Defaults to 600 seconds. Must be greater than zero.
 - any other keys: plugin config overrides for this step.
@@ -147,7 +147,7 @@ plato.frontend.toml
 Apply them with:
 
 ```bash
-plato init api my-api -g docker -g frontend
+plto init api my-api -g docker -g frontend
 ```
 
 Groups can merge:

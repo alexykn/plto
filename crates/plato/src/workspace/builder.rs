@@ -85,7 +85,7 @@ impl WorkspaceBuilder {
             };
             insert_unique(
                 &mut raw_map,
-                rel_path,
+                &rel_path,
                 WorkspaceEntry::new(content, &metadata),
                 "loading template",
             )?;
@@ -125,7 +125,7 @@ impl WorkspaceBuilder {
         let mut target_map = WorkspaceMap::new();
         for (rel_path, content) in self.content {
             let new_path = rewrite_plan.rewrite(&rel_path);
-            insert_unique(&mut target_map, new_path, content, "path rewrite")?;
+            insert_unique(&mut target_map, &new_path, content, "path rewrite")?;
         }
         deduplicate_dirmap(&mut target_map);
         Ok(Self {
@@ -145,14 +145,14 @@ impl WorkspaceBuilder {
                     let new_path = path.with_extension("");
                     insert_unique(
                         &mut rendered_map,
-                        new_path,
+                        &new_path,
                         content.rendered_from_template(rendered.into_bytes()),
                         "template rendering",
                     )?;
                 }
                 other => {
                     let _ = other;
-                    insert_unique(&mut rendered_map, path, content, "template rendering")?;
+                    insert_unique(&mut rendered_map, &path, content, "template rendering")?;
                 }
             }
         }
@@ -169,11 +169,11 @@ impl WorkspaceBuilder {
 
 fn insert_unique(
     entries: &mut WorkspaceMap,
-    path: PathBuf,
+    path: &Path,
     entry: WorkspaceEntry,
     operation: &str,
 ) -> Result<()> {
-    if entries.insert(path.clone(), entry).is_some() {
+    if entries.insert(path.to_path_buf(), entry).is_some() {
         bail!(
             "Output path collision during {operation}: {}",
             path.display()

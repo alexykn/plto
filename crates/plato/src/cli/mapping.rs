@@ -84,7 +84,6 @@ fn map_path_source(
     validation: bool,
 ) -> Result<(TemplateSource, String)> {
     let project_name = match (first, second, validation) {
-        (Some(name), None, _) => name,
         (None, None, true) => DEFAULT_VALIDATION_PROJECT_NAME.to_string(),
         (None, None, false) => {
             return Err(anyhow!("With --path, pass exactly one project name."));
@@ -92,7 +91,7 @@ fn map_path_source(
         (Some(_), Some(_), _) => {
             return Err(anyhow!("With --path, pass at most one project name."));
         }
-        (None, Some(name), true) => name,
+        (Some(name), None, _) | (None, Some(name), true) => name,
         (None, Some(_), false) => unreachable!("second positional without first is impossible"),
     };
     Ok((TemplateSource::Path { path }, project_name))

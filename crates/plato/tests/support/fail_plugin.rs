@@ -3,7 +3,7 @@ use std::os::unix::fs::PermissionsExt;
 use crate::temp::TestEnv;
 
 pub fn write_failing_plugin(env: &TestEnv, name: &str) {
-    let path = env.root().join("bin").join(format!("plato-plugin-{name}"));
+    let path = env.root().join("bin").join(format!("plto-plugin-{name}"));
     let script = format!(
         r#"#!/bin/sh
 case "$1" in

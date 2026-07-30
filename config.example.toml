@@ -35,7 +35,7 @@ bitbucket = "bitbucket.company.test"
 # Configured Templates Registry
 # ------------------------------------------------------------------------------
 # Template names are explicit. Directory names are not discovered as templates.
-# When configured here, you can run: `plato init <name> <project_name>`.
+# When configured here, you can run: `plto init <name> <project_name>`.
 [templates]
 
 # Local path template. Tilde expansion (~) is supported.
@@ -73,9 +73,9 @@ axum_service = "~/.config/plato/template_configs/axum_service.toml"
 # Use plugin_registry only when a plugin lives at a custom path or you want to
 # force a specific executable for a plugin name.
 [plugin_registry.uv]
-command = "~/.config/plato/plugins/bin/plato-plugin-uv"
-source = "cargo:plato-plugin-uv"
+command = "~/.config/plato/plugins/bin/plto-plugin-uv"
+source = "cargo:plto-plugin-uv"
 
 [plugin_registry.custom]
-command = "/opt/plato/plugins/plato-plugin-custom"
+command = "/opt/plato/plugins/plto-plugin-custom"
 source = "manual"

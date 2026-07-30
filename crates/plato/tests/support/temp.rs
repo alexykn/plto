@@ -42,7 +42,7 @@ impl TestEnv {
     }
 
     pub fn command(&self) -> Command {
-        let mut command = Command::new(env!("CARGO_BIN_EXE_plato"));
+        let mut command = Command::new(env!("CARGO_BIN_EXE_plto"));
         let existing_path = std::env::var_os("PATH").unwrap_or_default();
         let path = std::env::join_paths(
             std::iter::once(self.bin.clone()).chain(std::env::split_paths(&existing_path)),

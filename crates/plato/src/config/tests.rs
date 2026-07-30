@@ -19,8 +19,8 @@ api = { git = "gitlab:group/api", rev = "main", subpath = "templates/api" }
 api = "~/.config/plato/template_configs/api.toml"
 
 [plugin_registry.uv]
-command = "~/.local/share/plato/plugins/bin/plato-plugin-uv"
-source = "cargo:plato-plugin-uv"
+command = "~/.local/share/plato/plugins/bin/plto-plugin-uv"
+source = "cargo:plto-plugin-uv"
 "#;
     let config: GlobalConfig = toml::from_str(raw).unwrap();
 
@@ -40,7 +40,7 @@ source = "cargo:plato-plugin-uv"
     );
     assert_eq!(
         config.plugin_registry["uv"].command,
-        PathBuf::from("~/.local/share/plato/plugins/bin/plato-plugin-uv")
+        PathBuf::from("~/.local/share/plato/plugins/bin/plto-plugin-uv")
     );
 }
 

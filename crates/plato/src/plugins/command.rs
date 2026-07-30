@@ -1,5 +1,5 @@
 use anyhow::{Context, Result, anyhow, bail};
-use plato_plugin_api::{
+use plto_plugin_api::{
     PLUGIN_API_VERSION, PluginCapability, PluginMetadata, PluginSetupRequest, PluginSetupResponse,
 };
 use std::io::{Read, Write};

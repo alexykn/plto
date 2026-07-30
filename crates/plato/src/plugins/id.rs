@@ -25,7 +25,7 @@ impl PluginId {
     }
 
     pub(crate) fn crate_name(&self) -> String {
-        format!("plato-plugin-{}", self.0)
+        format!("plto-plugin-{}", self.0)
     }
 }
 

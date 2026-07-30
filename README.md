@@ -7,28 +7,30 @@ The core renderer stays deterministic: template context, path rewrites, path exc
 ## Install
 
 ```bash
-cargo install --path crates/plato
+cargo install plto
 ```
 
-First-party plugins are separate binaries. Install them locally from this workspace:
+This installs `plto` and all first-party plugin binaries (`cargo`, `git`, `pip`, `pnpm`,
+`precommit`, and `uv`) into Cargo's bin directory. They are immediately discoverable on `PATH`.
+
+To build the same set from a local checkout:
 
 ```bash
-plato plugin install uv --path plugins/plato-plugin-uv
-plato plugin install git --path plugins/plato-plugin-git
+cargo install --path .
 ```
 
 ## CLI
 
 ```bash
-plato init <template_name> <project_name>
-plato init --git <git_spec> <project_name>
-plato init --path <template_dir> <project_name>
-plato val <template_name> [project_name]
-plato val --path <template_dir> [project_name]
-plato config <template_name>
-plato list [-v|--verbose]
-plato plugin list
-plato plugin install <name>
+plto init <template_name> <project_name>
+plto init --git <git_spec> <project_name>
+plto init --path <template_dir> <project_name>
+plto val <template_name> [project_name]
+plto val --path <template_dir> [project_name]
+plto config <template_name>
+plto list [-v|--verbose]
+plto plugin list
+plto plugin install <name>
 ```
 
 Common options for `init` and `val`:
@@ -41,7 +43,7 @@ Common options for `init` and `val`:
 --set-string <key=value> String template context override
 ```
 
-`--rev` and `--subpath` apply only to remote templates. `--path` always requires a directory and cannot be combined with Git-specific options. `plato init --force` transactionally replaces an existing target directory and restores the original directory if rendering or setup fails.
+`--rev` and `--subpath` apply only to remote templates. `--path` always requires a directory and cannot be combined with Git-specific options. `plto init --force` transactionally replaces an existing target directory and restores the original directory if rendering or setup fails.
 
 ## Quick start
 
@@ -55,7 +57,7 @@ python312 = { path = "~/.config/plato/py312" }
 Then generate a project:
 
 ```bash
-plato init python312 my-project
+plto init python312 my-project
 ```
 
 A template-local `plato.toml` controls rendering and setup. For example, a Python template can run `uv` and initialize Git after rendering:
@@ -92,7 +94,7 @@ More complete examples live in [`docs/examples/`](docs/examples/).
 - **Permissions** on source files, including executable bits on Unix, are preserved in generated files.
 - **Template context** provides project name variants such as `project_name`, `project_kebab`, `project_snake`, and `project_pascal`.
 - **Path rewrites/excludes** are core rendering behavior and happen before template contents are rendered.
-- **Plugins** are external executables named `plato-plugin-<name>` that run after the rendered project is written.
+- **Plugins** are external executables named `plto-plugin-<name>` that run after the rendered project is written.
 - **Setup steps** are ordered. Each step can run in the project root or a subdirectory via `source_path`.
 
 ## Global configuration
@@ -122,22 +124,22 @@ api = "~/.config/plato/template_configs/api.toml"
 Configured Git templates can be used directly:
 
 ```bash
-plato init api my-api
+plto init api my-api
 ```
 
 Ad-hoc Git templates use `--git`:
 
 ```bash
-plato init --git gitlab:group/repo my-api
+plto init --git gitlab:group/repo my-api
 ```
 
 Supported Git specs include provider shorthand, SSH remotes, SCP-like SSH syntax, and HTTPS URLs. Plato rejects embedded credentials in Git URLs; use SSH keys or system Git credential helpers instead.
 
 ## Validation
 
-`plato val` validates Plato rendering mechanics without creating a project or running setup plugins. It catches invalid config, template syntax errors, invalid path rewrites, duplicate rendered paths, undefined template variables, invalid setup-step structure, and setup `source_path` directories that are not rendered.
+`plto val` validates Plato rendering mechanics without creating a project or running setup plugins. It catches invalid config, template syntax errors, invalid path rewrites, duplicate rendered paths, undefined template variables, invalid setup-step structure, and setup `source_path` directories that are not rendered.
 
-It does not prove that setup tools such as `uv`, `pip`, `cargo`, `pnpm`, or `git` will succeed. Use `plato init` in a temporary directory for full setup smoke tests.
+It does not prove that setup tools such as `uv`, `pip`, `cargo`, `pnpm`, or `git` will succeed. Use `plto init` in a temporary directory for full setup smoke tests.
 
 ## Development
 

@@ -55,7 +55,11 @@ pub(crate) fn wait_with_timeout(
 pub(crate) fn terminate_process_tree(child: &mut Child, description: &str) -> Result<()> {
     #[cfg(unix)]
     {
-        let process_group = -(child.id() as i32);
+        let process_group = i32::try_from(child.id())
+            .context("Child ID cannot be represented as a process group")?;
+        let process_group = process_group
+            .checked_neg()
+            .context("Child process group cannot be negated")?;
         let result = unsafe { libc::kill(process_group, libc::SIGKILL) };
         if result != 0 {
             let error = std::io::Error::last_os_error();

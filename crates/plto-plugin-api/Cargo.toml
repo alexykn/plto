@@ -1,0 +1,12 @@
+[package]
+name = "plto-plugin-api"
+version = "0.1.1"
+description = "Protocol types for Plato setup plugins"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true

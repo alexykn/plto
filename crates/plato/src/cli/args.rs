@@ -2,7 +2,7 @@ use clap::{Args, Parser, Subcommand};
 use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
-#[command(name = "plato")]
+#[command(name = "plto")]
 #[command(about = "Scaffolds projects from ~/.config/plato", long_about = None)]
 pub(crate) struct Cli {
     #[command(subcommand)]
@@ -41,7 +41,7 @@ pub(crate) enum PluginCommands {
     Install(PluginInstallArgs),
     /// Register an explicit plugin executable path in global config
     Register {
-        /// Plugin name, e.g. uv for plato-plugin-uv
+        /// Plugin name, e.g. uv for plto-plugin-uv
         name: String,
         /// Path to the plugin executable
         #[arg(long)]
@@ -56,7 +56,7 @@ pub(crate) enum PluginCommands {
 
 #[derive(Args, Debug)]
 pub(crate) struct PluginInstallArgs {
-    /// Plugin name, e.g. uv installs the cargo crate plato-plugin-uv
+    /// Plugin name, e.g. uv installs the cargo crate plto-plugin-uv
     pub(crate) name: String,
 
     /// Install with cargo from crates.io
