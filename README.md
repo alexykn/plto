@@ -1,8 +1,8 @@
-# Plato
+# plto
 
-Plato is a local project scaffolding tool for one-command project setup. It renders a template directory with MiniJinja, writes the generated project, then runs ordered setup plugins such as `uv`, `pip`, `cargo`, `pnpm`, `git`, or `precommit`.
+plto is a local project scaffolding tool for one-command project setup. It renders a template directory with MiniJinja, writes the generated project, then runs ordered setup plugins such as `uv`, `pip`, `cargo`, `pnpm`, `git`, or `precommit`.
 
-The core renderer stays deterministic: template context, path rewrites, path excludes, and file rendering are handled by Plato. Project initialization happens after rendering through external plugin binaries.
+The core renderer stays deterministic: template context, path rewrites, path excludes, and file rendering are handled by plto. Project initialization happens after rendering through external plugin binaries.
 
 ## Install
 
@@ -38,7 +38,7 @@ Common options for `init` and `val`:
 ```text
 --rev <rev>              Git branch, tag, or commit
 --subpath <path>         Subdirectory inside a Git template
--g, --group <group>      Apply plato.<group>.toml
+-g, --group <group>      Apply plto.<group>.toml
 -s, --set <key=value>    Typed template context override
 --set-string <key=value> String template context override
 ```
@@ -47,11 +47,11 @@ Common options for `init` and `val`:
 
 ## Quick start
 
-Register templates in `~/.config/plato/config.toml`:
+Register templates in `~/.config/plto/config.toml`:
 
 ```toml
 [templates]
-python312 = { path = "~/.config/plato/py312" }
+python312 = { path = "~/.config/plto/py312" }
 ```
 
 Then generate a project:
@@ -60,7 +60,7 @@ Then generate a project:
 plto init python312 my-project
 ```
 
-A template-local `plato.toml` controls rendering and setup. For example, a Python template can run `uv` and initialize Git after rendering:
+A template-local `plto.toml` controls rendering and setup. For example, a Python template can run `uv` and initialize Git after rendering:
 
 ```toml
 [plugins.uv]
@@ -82,9 +82,9 @@ More complete examples live in [`docs/examples/`](docs/examples/).
 
 ## Documentation
 
-- [Configuration reference](docs/configuration.md): `plato.toml`, template context, path rewrites/excludes, setup steps, and groups.
+- [Configuration reference](docs/configuration.md): `plto.toml`, template context, path rewrites/excludes, setup steps, and groups.
 - [Plugin system](docs/plugins.md): external plugin protocol, discovery, installation, and Rust plugin authoring.
-- [Config examples](docs/examples/): practical `plato.toml` snippets for first-party plugins.
+- [Config examples](docs/examples/): practical `plto.toml` snippets for first-party plugins.
 - [Release guide](docs/releasing.md): staged package publication for the core and plugin crates.
 
 ## Core concepts
@@ -102,7 +102,7 @@ More complete examples live in [`docs/examples/`](docs/examples/).
 Global configuration lives at:
 
 ```text
-~/.config/plato/config.toml
+~/.config/plto/config.toml
 ```
 
 See [config.example.toml](config.example.toml) for a complete global configuration example.
@@ -110,15 +110,15 @@ See [config.example.toml](config.example.toml) for a complete global configurati
 Minimal example:
 
 ```toml
-[plato]
+[plto]
 default_git_provider = "github"
 
 [templates]
-py = { path = "~/.config/plato/templates/py" }
+py = { path = "~/.config/plto/templates/py" }
 api = { git = "gitlab:platform/api-template", rev = "main" }
 
 [template_configs]
-api = "~/.config/plato/template_configs/api.toml"
+api = "~/.config/plto/template_configs/api.toml"
 ```
 
 Configured Git templates can be used directly:
@@ -133,11 +133,11 @@ Ad-hoc Git templates use `--git`:
 plto init --git gitlab:group/repo my-api
 ```
 
-Supported Git specs include provider shorthand, SSH remotes, SCP-like SSH syntax, and HTTPS URLs. Plato rejects embedded credentials in Git URLs; use SSH keys or system Git credential helpers instead.
+Supported Git specs include provider shorthand, SSH remotes, SCP-like SSH syntax, and HTTPS URLs. plto rejects embedded credentials in Git URLs; use SSH keys or system Git credential helpers instead.
 
 ## Validation
 
-`plto val` validates Plato rendering mechanics without creating a project or running setup plugins. It catches invalid config, template syntax errors, invalid path rewrites, duplicate rendered paths, undefined template variables, invalid setup-step structure, and setup `source_path` directories that are not rendered.
+`plto val` validates plto rendering mechanics without creating a project or running setup plugins. It catches invalid config, template syntax errors, invalid path rewrites, duplicate rendered paths, undefined template variables, invalid setup-step structure, and setup `source_path` directories that are not rendered.
 
 It does not prove that setup tools such as `uv`, `pip`, `cargo`, `pnpm`, or `git` will succeed. Use `plto init` in a temporary directory for full setup smoke tests.
 
