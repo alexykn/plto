@@ -79,23 +79,20 @@ jobs:
           publish_package() {
             local package_name="$1"
             local package_version="$2"
-            local registry_status
+            local registry_output
             local publish_output
             local publish_status
 
-            registry_status=$(curl --silent --output /dev/null --write-out "%{http_code}" \
-              "https://crates.io/api/v1/crates/${package_name}/${package_version}")
-            case "$registry_status" in
-              200)
-                echo "${package_name} v${package_version} is already published; skipping."
-                return 0
-                ;;
-              404) ;;
-              *)
-                echo "Unable to check ${package_name} v${package_version} on crates.io (HTTP ${registry_status})." >&2
-                return 1
-                ;;
-            esac
+            if registry_output=$(cd "$(mktemp -d)" && cargo info --registry crates-io \
+              "${package_name}@${package_version}" 2>&1); then
+              echo "${package_name} v${package_version} is already published; skipping."
+              return 0
+            fi
+
+            if [[ "$registry_output" != *"could not find"* ]]; then
+              printf '%s\n' "$registry_output" >&2
+              return 1
+            fi
 
             for attempt in {1..5}; do
               if publish_output=$(cargo publish --locked -p "$package_name" 2>&1); then
