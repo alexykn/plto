@@ -1,7 +1,7 @@
 [package]
 name = "plto-plugin-api"
 version = "1.0.0"
-description = "Protocol types for Plato setup plugins"
+description = "Protocol types for Plto setup plugins"
 edition.workspace = true
 license.workspace = true
 repository.workspace = true

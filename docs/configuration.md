@@ -1,8 +1,8 @@
 # Configuration reference
 
-Template configuration lives in `plato.toml` at the template root. The file is configuration only and is not copied into the generated project.
+Template configuration lives in `plto.toml` at the template root. The file is configuration only and is not copied into the generated project.
 
-Plato rejects unknown core configuration fields. This makes misspelled options fail instead of silently changing behavior. Plugin-specific tables are validated by their plugin.
+Plto rejects unknown core configuration fields. This makes misspelled options fail instead of silently changing behavior. Plugin-specific tables are validated by their plugin.
 
 ## Top-level sections
 
@@ -25,7 +25,7 @@ Plato rejects unknown core configuration fields. This makes misspelled options f
 
 ## Template context
 
-Plato always provides project name variants:
+Plto always provides project name variants:
 
 ```text
 project_name    # exactly as passed on the CLI
@@ -89,7 +89,7 @@ scope = "install"
 setup = "editable"
 ```
 
-Core Plato does not understand the full schema of every plugin. It parses the TOML, merges setup-step overrides, converts the result to JSON, and sends it to the plugin.
+Core Plto does not understand the full schema of every plugin. It parses the TOML, merges setup-step overrides, converts the result to JSON, and sends it to the plugin.
 
 ## Setup steps
 
@@ -104,7 +104,7 @@ timeout_secs = 600
 
 Fields:
 
-- `plugin`: plugin name; Plato resolves `uv` to `plto-plugin-uv`.
+- `plugin`: plugin name; Plto resolves `uv` to `plto-plugin-uv`.
 - `source_path`: optional relative path inside the generated project. Defaults to `.`. The directory must exist in the rendered workspace.
 - `timeout_secs`: optional plugin setup timeout. Defaults to 600 seconds. Must be greater than zero.
 - any other keys: plugin config overrides for this step.
@@ -136,12 +136,12 @@ groups = ["lint"]
 
 ## Groups
 
-Optional group files live next to `plato.toml`:
+Optional group files live next to `plto.toml`:
 
 ```text
-plato.toml
-plato.docker.toml
-plato.frontend.toml
+plto.toml
+plto.docker.toml
+plto.frontend.toml
 ```
 
 Apply them with:
@@ -164,9 +164,9 @@ Setup steps from groups are appended in CLI order.
 
 Files ending in `.j2` or `.mj` are rendered with MiniJinja and written without that extension. Non-template files are copied as bytes. Symlinks inside templates are rejected for safety.
 
-On Unix, Plato preserves source permission bits, including executable scripts. Template-root paths must be directories; a regular file is never treated as an empty template.
+On Unix, Plto preserves source permission bits, including executable scripts. Template-root paths must be directories; a regular file is never treated as an empty template.
 
-Plato also registers Ansible-style regex filters:
+Plto also registers Ansible-style regex filters:
 
 ```jinja2
 {{ value | regex_replace('^py3-', '') }}

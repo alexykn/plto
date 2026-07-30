@@ -1,12 +1,12 @@
 # Plugin system
 
-Plato setup plugins are external executables. A plugin named `uv` is a binary named:
+Plto setup plugins are external executables. A plugin named `uv` is a binary named:
 
 ```text
 plto-plugin-uv
 ```
 
-Plugins run after Plato renders and writes the project.
+Plugins run after Plto renders and writes the project.
 
 ## Commands
 
@@ -22,7 +22,7 @@ Protocol rules:
 - stdout is JSON protocol output only.
 - stderr is for logs, diagnostics, and child tool output.
 - `setup` receives JSON on stdin.
-- Metadata `name` must match the requested plugin name, support Plato's requested API version, and advertise the `setup` capability before Plato will run it.
+- Metadata `name` must match the requested plugin name, support Plto's requested API version, and advertise the `setup` capability before Plto will run it.
 
 ## Metadata
 
@@ -39,7 +39,7 @@ Protocol rules:
 
 ## Setup
 
-Plato sends a setup request containing the project root, step workdir, merged plugin config, template context, options, and environment metadata.
+Plto sends a setup request containing the project root, step workdir, merged plugin config, template context, options, and environment metadata.
 
 The plugin responds with:
 
@@ -55,21 +55,21 @@ On failure, return `ok = false` with an error object, or exit non-zero with a us
 
 ## Discovery
 
-Plato resolves plugins in this order:
+Plto resolves plugins in this order:
 
 1. explicit global registry entry
-2. Plato-managed plugin directory
+2. Plto-managed plugin directory
 3. `PATH`
 
 Managed plugins are installed under:
 
 ```text
-$PLATO_HOME/plugins/bin
+$PLTO_HOME/plugins/bin
 ```
 
-If `PLATO_HOME` is not set, Plato uses its global config directory.
+If `PLTO_HOME` is not set, Plto uses its global config directory.
 
-Plugin resolution uses this precedence: explicit registry entry, Plato-managed executable, then `PATH`. `plto plugin list` marks the effective candidate and any shadowed alternatives. Executable lookup respects platform conventions such as Windows `PATHEXT`.
+Plugin resolution uses this precedence: explicit registry entry, Plto-managed executable, then `PATH`. `plto plugin list` marks the effective candidate and any shadowed alternatives. Executable lookup respects platform conventions such as Windows `PATHEXT`.
 
 ## Plugin management
 
@@ -106,9 +106,9 @@ Rust plugins can use:
 - `plto-plugin-api` for protocol types
 - `plto-plugin-support` for stdin/stdout runtime helpers and safe command execution
 
-Plugin setup receives `request.options.timeout_secs` when a setup step configures `timeout_secs`. Plato enforces that timeout at the plugin process boundary. Plugins using `plto-plugin-support::command::run_command_with_timeout` can also apply the same timeout to child commands they spawn. Plugin stdout is reserved for JSON protocol responses; command output forwarded by the support crate is written to stderr.
+Plugin setup receives `request.options.timeout_secs` when a setup step configures `timeout_secs`. Plto enforces that timeout at the plugin process boundary. Plugins using `plto-plugin-support::command::run_command_with_timeout` can also apply the same timeout to child commands they spawn. Plugin stdout is reserved for JSON protocol responses; command output forwarded by the support crate is written to stderr.
 
-Timed-out plugin processes are terminated with their descendants. On Unix Plato uses process groups; on Windows it uses `taskkill /T` for the spawned process tree.
+Timed-out plugin processes are terminated with their descendants. On Unix Plto uses process groups; on Windows it uses `taskkill /T` for the spawned process tree.
 
 Minimal shape:
 

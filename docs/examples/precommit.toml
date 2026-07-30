@@ -1,5 +1,5 @@
 # NOTE: When used as the real template config at a template root, this file
-# must be named plato.toml. Files in docs/examples/ are documentation copies.
+# must be named plto.toml. Files in docs/examples/ are documentation copies.
 #
 # Project using pre-commit hooks.
 #

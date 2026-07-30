@@ -1,11 +1,11 @@
 # NOTE: When used as the real template config at a template root, this file
-# must be named plato.toml. Files in docs/examples/ are documentation copies.
+# must be named plto.toml. Files in docs/examples/ are documentation copies.
 #
 # Python project using pip.
 #
 # This example creates a venv and installs dependencies from requirements.txt.
 # If requirements.txt is missing, the pip plugin can derive a temporary
-# .plato/requirements.txt from pyproject.toml dependencies.
+# .plto/requirements.txt from pyproject.toml dependencies.
 
 [template.context]
 author = "Jane Doe"

@@ -24,58 +24,58 @@ include = [
   "Cargo.lock",
   "rust-toolchain.toml",
   "README.md",
-  "crates/plato/src/**",
-  "crates/plato/tests/**",
+  "crates/plto/src/**",
+  "crates/plto/tests/**",
 ]
 
 [lib]
-name = "plato"
-path = "crates/plato/src/lib.rs"
+name = "plto"
+path = "crates/plto/src/lib.rs"
 
 [[bin]]
 name = "plto"
-path = "crates/plato/src/main.rs"
+path = "crates/plto/src/main.rs"
 
 [[bin]]
 name = "plto-plugin-cargo"
-path = "crates/plato/src/bin/plto-plugin-cargo.rs"
+path = "crates/plto/src/bin/plto-plugin-cargo.rs"
 
 [[bin]]
 name = "plto-plugin-git"
-path = "crates/plato/src/bin/plto-plugin-git.rs"
+path = "crates/plto/src/bin/plto-plugin-git.rs"
 
 [[bin]]
 name = "plto-plugin-pip"
-path = "crates/plato/src/bin/plto-plugin-pip.rs"
+path = "crates/plto/src/bin/plto-plugin-pip.rs"
 
 [[bin]]
 name = "plto-plugin-pnpm"
-path = "crates/plato/src/bin/plto-plugin-pnpm.rs"
+path = "crates/plto/src/bin/plto-plugin-pnpm.rs"
 
 [[bin]]
 name = "plto-plugin-precommit"
-path = "crates/plato/src/bin/plto-plugin-precommit.rs"
+path = "crates/plto/src/bin/plto-plugin-precommit.rs"
 
 [[bin]]
 name = "plto-plugin-uv"
-path = "crates/plato/src/bin/plto-plugin-uv.rs"
+path = "crates/plto/src/bin/plto-plugin-uv.rs"
 
 [[test]]
 name = "init_cleanup"
-path = "crates/plato/tests/init_cleanup.rs"
+path = "crates/plto/tests/init_cleanup.rs"
 
 [[test]]
 name = "plugin_timeout"
-path = "crates/plato/tests/plugin_timeout.rs"
+path = "crates/plto/tests/plugin_timeout.rs"
 
 [[test]]
 name = "validation"
-path = "crates/plato/tests/validation.rs"
+path = "crates/plto/tests/validation.rs"
 
 [workspace.package]
 edition = "2024"
 license = "MIT"
-repository = "https://github.com/alxknt/plato"
+repository = "https://github.com/alxknt/plto"
 rust-version = "1.97.1"
 
 [workspace.dependencies]

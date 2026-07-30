@@ -14,7 +14,7 @@ impl SetupPlugin for GitPlugin {
             version: env!("CARGO_PKG_VERSION").to_string(),
             supported_api_versions: vec![1],
             capabilities: vec![PluginCapability::Setup],
-            description: Some("Initializes git repositories for Plato projects".to_string()),
+            description: Some("Initializes git repositories for Plto projects".to_string()),
         }
     }
 

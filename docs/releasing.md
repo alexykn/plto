@@ -1,6 +1,6 @@
-# Releasing Plato crates
+# Releasing Plto crates
 
-Plato's packages depend on one another through versioned crates.io dependencies. Publish them in this order so Cargo can resolve every dependent package during packaging and installation:
+Plto's packages depend on one another through versioned crates.io dependencies. Publish them in this order so Cargo can resolve every dependent package during packaging and installation:
 
 1. `plto-plugin-api`
 2. `plto-plugin-support`

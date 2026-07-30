@@ -1,7 +1,7 @@
 [package]
 name = "plto-plugin-git"
 version = "1.0.0"
-description = "Git setup plugin for Plato"
+description = "Git setup plugin for Plto"
 edition.workspace = true
 license.workspace = true
 repository.workspace = true

@@ -100,7 +100,7 @@ mod tests {
     #[test]
     fn rejects_cargo_init_when_manifest_exists() {
         let dir = std::env::temp_dir().join(format!(
-            "plato-cargo-plugin-{}",
+            "plto-cargo-plugin-{}",
             SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .unwrap()

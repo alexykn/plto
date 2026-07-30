@@ -57,7 +57,7 @@ impl PluginOptions {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PluginEnvironment {
-    pub plato_version: String,
+    pub plto_version: String,
     pub os: String,
     pub arch: String,
 }

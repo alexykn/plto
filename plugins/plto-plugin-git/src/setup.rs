@@ -327,7 +327,7 @@ mod tests {
                 .as_nanos();
             let counter = TEMP_DIR_COUNTER.fetch_add(1, Ordering::Relaxed);
             let path = std::env::temp_dir()
-                .join(format!("plato-git-{}-{id}-{counter}", std::process::id()));
+                .join(format!("plto-git-{}-{id}-{counter}", std::process::id()));
             create_dir_all(&path).unwrap();
             Self { path }
         }

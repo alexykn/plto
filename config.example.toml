@@ -1,12 +1,12 @@
 # ==============================================================================
-# Plato Global Configuration Example (config.toml)
+# Plto Global Configuration Example (config.toml)
 #
-# Save this file as ~/.config/plato/config.toml to configure named templates,
+# Save this file as ~/.config/plto/config.toml to configure named templates,
 # remote Git provider defaults, optional template config overrides, and explicit
 # plugin registry entries.
 # ==============================================================================
 
-[plato]
+[plto]
 # The default Git provider to use when parsing shorthand Git specs such as
 # "owner/repo" with no provider or host prefix.
 #
@@ -17,7 +17,7 @@ default_git_provider = "github"
 # ------------------------------------------------------------------------------
 # Git Provider Custom Host Overrides
 # ------------------------------------------------------------------------------
-[plato.git_hosts]
+[plto.git_hosts]
 # Override built-in provider domains to point at private/self-hosted instances.
 #
 # Default values used when not configured:
@@ -39,7 +39,7 @@ bitbucket = "bitbucket.company.test"
 [templates]
 
 # Local path template. Tilde expansion (~) is supported.
-python312 = { path = "~/.config/plato/templates/python312" }
+python312 = { path = "~/.config/plto/templates/python312" }
 
 # Provider remote Git template. Provider shorthand normalizes to an SSH remote.
 # Example below resolves to git@gitlab.company.test:development/api-boilerplate.git
@@ -55,27 +55,27 @@ custom_git = { git = "git@git.company.test:templates/rust-base.git", rev = "main
 # ------------------------------------------------------------------------------
 # Template Configuration Overrides
 # ------------------------------------------------------------------------------
-# Optional external plato.toml files for configured templates.
+# Optional external plto.toml files for configured templates.
 #
-# Overrides win over source-local plato.toml files. This is useful for remote
+# Overrides win over source-local plto.toml files. This is useful for remote
 # templates whose repository should not contain your local/private config.
 [template_configs]
-team_api = "~/.config/plato/template_configs/team_api.toml"
-axum_service = "~/.config/plato/template_configs/axum_service.toml"
+team_api = "~/.config/plto/template_configs/team_api.toml"
+axum_service = "~/.config/plto/template_configs/axum_service.toml"
 
 
 # ------------------------------------------------------------------------------
 # Explicit Plugin Registry
 # ------------------------------------------------------------------------------
-# Usually you do not need this: Plato discovers plugins installed into its
+# Usually you do not need this: Plto discovers plugins installed into its
 # managed plugin directory and plugins available on PATH.
 #
 # Use plugin_registry only when a plugin lives at a custom path or you want to
 # force a specific executable for a plugin name.
 [plugin_registry.uv]
-command = "~/.config/plato/plugins/bin/plto-plugin-uv"
+command = "~/.config/plto/plugins/bin/plto-plugin-uv"
 source = "cargo:plto-plugin-uv"
 
 [plugin_registry.custom]
-command = "/opt/plato/plugins/plto-plugin-custom"
+command = "/opt/plto/plugins/plto-plugin-custom"
 source = "manual"
