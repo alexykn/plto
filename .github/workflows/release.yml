@@ -98,9 +98,10 @@ jobs:
               if publish_output=$(cargo publish --locked -p "$package_name" 2>&1); then
                 printf '%s\n' "$publish_output"
                 return 0
+              else
+                publish_status=$?
               fi
 
-              publish_status=$?
               printf '%s\n' "$publish_output" >&2
               if [[ "$publish_output" != *"status 429 Too Many Requests"* ]] || (( attempt == 5 )); then
                 return "$publish_status"
@@ -134,4 +135,9 @@ jobs:
       - name: Create GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" --verify-tag --generate-notes release/*
+        run: |
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            echo "GitHub release ${GITHUB_REF_NAME} already exists; skipping."
+          else
+            gh release create "$GITHUB_REF_NAME" --verify-tag --generate-notes release/*
+          fi
