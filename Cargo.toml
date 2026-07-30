@@ -13,7 +13,7 @@ members = [
 
 [package]
 name = "plto"
-version = "0.1.1"
+version = "1.0.0"
 description = "A local project scaffolding tool with bundled setup plugins"
 edition.workspace = true
 license.workspace = true
@@ -86,14 +86,14 @@ serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.151"
 toml = "1.1.4"
 libc = "0.2.186"
-plto-plugin-api = { version = "0.1.1", path = "crates/plto-plugin-api" }
-plto-plugin-support = { version = "0.1.1", path = "crates/plto-plugin-support" }
-plto-plugin-cargo = { version = "0.1.1", path = "plugins/plto-plugin-cargo" }
-plto-plugin-git = { version = "0.1.1", path = "plugins/plto-plugin-git" }
-plto-plugin-pip = { version = "0.1.1", path = "plugins/plto-plugin-pip" }
-plto-plugin-pnpm = { version = "0.1.1", path = "plugins/plto-plugin-pnpm" }
-plto-plugin-precommit = { version = "0.1.1", path = "plugins/plto-plugin-precommit" }
-plto-plugin-uv = { version = "0.1.1", path = "plugins/plto-plugin-uv" }
+plto-plugin-api = { version = "1.0.0", path = "crates/plto-plugin-api" }
+plto-plugin-support = { version = "1.0.0", path = "crates/plto-plugin-support" }
+plto-plugin-cargo = { version = "1.0.0", path = "plugins/plto-plugin-cargo" }
+plto-plugin-git = { version = "1.0.0", path = "plugins/plto-plugin-git" }
+plto-plugin-pip = { version = "1.0.0", path = "plugins/plto-plugin-pip" }
+plto-plugin-pnpm = { version = "1.0.0", path = "plugins/plto-plugin-pnpm" }
+plto-plugin-precommit = { version = "1.0.0", path = "plugins/plto-plugin-precommit" }
+plto-plugin-uv = { version = "1.0.0", path = "plugins/plto-plugin-uv" }
 
 [dependencies]
 anyhow.workspace = true

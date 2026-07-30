@@ -1,6 +1,6 @@
 [package]
 name = "plto-plugin-cargo"
-version = "0.1.1"
+version = "1.0.0"
 description = "Cargo setup plugin for Plato"
 edition.workspace = true
 license.workspace = true

@@ -1,6 +1,6 @@
 [package]
 name = "plto-plugin-support"
-version = "0.1.1"
+version = "1.0.0"
 description = "Runtime support helpers for Plato setup plugins"
 edition.workspace = true
 license.workspace = true

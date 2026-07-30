@@ -309,7 +309,7 @@ checksum = "04744f49eae99ab78e0d5c0b603ab218f515ea8cfe5a456d7629ad883a3b6e7d"
 
 [[package]]
 name = "plto"
-version = "0.1.1"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "blake3",
@@ -336,7 +336,7 @@ dependencies = [
 
 [[package]]
 name = "plto-plugin-api"
-version = "0.1.1"
+version = "1.0.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -344,7 +344,7 @@ dependencies = [
 
 [[package]]
 name = "plto-plugin-cargo"
-version = "0.1.1"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "plto-plugin-api",
@@ -355,7 +355,7 @@ dependencies = [
 
 [[package]]
 name = "plto-plugin-git"
-version = "0.1.1"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "plto-plugin-api",
@@ -366,7 +366,7 @@ dependencies = [
 
 [[package]]
 name = "plto-plugin-pip"
-version = "0.1.1"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "plto-plugin-api",
@@ -378,7 +378,7 @@ dependencies = [
 
 [[package]]
 name = "plto-plugin-pnpm"
-version = "0.1.1"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "plto-plugin-api",
@@ -389,7 +389,7 @@ dependencies = [
 
 [[package]]
 name = "plto-plugin-precommit"
-version = "0.1.1"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "plto-plugin-api",
@@ -400,7 +400,7 @@ dependencies = [
 
 [[package]]
 name = "plto-plugin-support"
-version = "0.1.1"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "libc",
@@ -411,7 +411,7 @@ dependencies = [
 
 [[package]]
 name = "plto-plugin-uv"
-version = "0.1.1"
+version = "1.0.0"
 dependencies = [
  "anyhow",
  "plto-plugin-api",
