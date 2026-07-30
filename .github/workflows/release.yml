@@ -106,8 +106,8 @@ jobs:
                 return "$publish_status"
               fi
 
-              echo "crates.io rate-limited ${package_name}; retrying in 60 seconds (attempt ${attempt}/5)." >&2
-              sleep 60
+              echo "crates.io rate-limited ${package_name}; retrying in 240 seconds (attempt ${attempt}/5)." >&2
+              sleep 240
             done
           }
 
