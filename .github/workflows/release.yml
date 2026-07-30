@@ -74,16 +74,59 @@ jobs:
       - name: Publish crates.io packages
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        shell: bash
         run: |
-          cargo publish --locked -p plto-plugin-api
-          cargo publish --locked -p plto-plugin-support
-          cargo publish --locked -p plto-plugin-cargo
-          cargo publish --locked -p plto-plugin-git
-          cargo publish --locked -p plto-plugin-pip
-          cargo publish --locked -p plto-plugin-pnpm
-          cargo publish --locked -p plto-plugin-precommit
-          cargo publish --locked -p plto-plugin-uv
-          cargo publish --locked -p plto
+          publish_package() {
+            local package_name="$1"
+            local package_version="$2"
+            local registry_status
+            local publish_output
+            local publish_status
+
+            registry_status=$(curl --silent --output /dev/null --write-out "%{http_code}" \
+              "https://crates.io/api/v1/crates/${package_name}/${package_version}")
+            case "$registry_status" in
+              200)
+                echo "${package_name} v${package_version} is already published; skipping."
+                return 0
+                ;;
+              404) ;;
+              *)
+                echo "Unable to check ${package_name} v${package_version} on crates.io (HTTP ${registry_status})." >&2
+                return 1
+                ;;
+            esac
+
+            for attempt in {1..5}; do
+              if publish_output=$(cargo publish --locked -p "$package_name" 2>&1); then
+                printf '%s\n' "$publish_output"
+                return 0
+              fi
+
+              publish_status=$?
+              printf '%s\n' "$publish_output" >&2
+              if [[ "$publish_output" != *"status 429 Too Many Requests"* ]] || (( attempt == 5 )); then
+                return "$publish_status"
+              fi
+
+              echo "crates.io rate-limited ${package_name}; retrying in 60 seconds (attempt ${attempt}/5)." >&2
+              sleep 60
+            done
+          }
+
+          version="${GITHUB_REF_NAME#v}"
+          for package_name in \
+            plto-plugin-api \
+            plto-plugin-support \
+            plto-plugin-cargo \
+            plto-plugin-git \
+            plto-plugin-pip \
+            plto-plugin-pnpm \
+            plto-plugin-precommit \
+            plto-plugin-uv \
+            plto; do
+            publish_package "$package_name" "$version"
+          done
       - uses: actions/download-artifact@v4
         with:
           path: release
