@@ -1,4 +1,5 @@
 use anyhow::{Context, Result, bail};
+use minijinja::value::Serde;
 use std::collections::{BTreeMap, HashSet};
 use std::path::{Path, PathBuf};
 
@@ -58,14 +59,14 @@ impl PathRewritePlan {
                 );
             };
 
-            let rendered_target =
-                env.render_str(&replacement.replace, context)
-                    .with_context(|| {
-                        format!(
-                            "Invalid [path.replace.{name}]: failed to render replacement {:?}",
-                            replacement.replace
-                        )
-                    })?;
+            let rendered_target = env
+                .render_str(&replacement.replace, Serde(context))
+                .with_context(|| {
+                    format!(
+                        "Invalid [path.replace.{name}]: failed to render replacement {:?}",
+                        replacement.replace
+                    )
+                })?;
             let target = PathBuf::from(rendered_target);
             validate_target_path(name, &target)?;
 

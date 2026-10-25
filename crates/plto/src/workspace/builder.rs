@@ -1,4 +1,5 @@
 use anyhow::{Context, Result, bail};
+use minijinja::value::Serde;
 use serde::Serialize;
 use std::collections::BTreeMap;
 use std::fs::{metadata, read_to_string};
@@ -140,7 +141,7 @@ impl WorkspaceBuilder {
             match &content.content {
                 EntryContent::Template(raw_text) => {
                     let rendered = env
-                        .render_str(raw_text, context)
+                        .render_str(raw_text, Serde(context))
                         .with_context(|| format!("Failed to render {}", path.display()))?;
                     let new_path = path.with_extension("");
                     insert_unique(

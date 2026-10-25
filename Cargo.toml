@@ -80,12 +80,12 @@ rust-version = "1.99.1"
 
 [workspace.dependencies]
 anyhow = "1.0.104"
-clap = { version = "4.6.4", features = ["derive"] }
+clap = { version = "4.6.7", features = ["derive"] }
 directories = "6.0.0"
 serde = { version = "1.0.229", features = ["derive"] }
-serde_json = "1.0.151"
-toml = "1.1.4"
-libc = "0.2.186"
+serde_json = "1.0.154"
+toml = "1.1.8"
+libc = "0.2.191"
 plto-plugin-api = { version = "1.0.0", path = "crates/plto-plugin-api" }
 plto-plugin-support = { version = "1.0.0", path = "crates/plto-plugin-support" }
 plto-plugin-cargo = { version = "1.0.0", path = "plugins/plto-plugin-cargo" }
@@ -97,12 +97,12 @@ plto-plugin-uv = { version = "1.0.0", path = "plugins/plto-plugin-uv" }
 
 [dependencies]
 anyhow.workspace = true
-blake3 = "1.8.5"
+blake3 = "1.8.7"
 clap.workspace = true
 directories.workspace = true
 fs2 = "0.4.3"
 libc.workspace = true
-minijinja = "2.21.0"
+minijinja = { version = "3.0.3", features = ["serde"] }
 plto-plugin-api.workspace = true
 plto-plugin-support.workspace = true
 plto-plugin-cargo.workspace = true

@@ -1,4 +1,4 @@
-use minijinja::value::{Kwargs, Rest, Value, from_args};
+use minijinja::value::{Kwargs, Rest, Serde, Value, ValueOrKwargs, from_args};
 use minijinja::{Error, ErrorKind};
 use regex::{Captures, Regex, RegexBuilder};
 
@@ -24,7 +24,9 @@ pub(crate) fn register(env: &mut minijinja::Environment<'_>) {
     );
     env.add_filter(
         "regex_search",
-        |value: String, pattern: String, args: Rest<Value>| regex_search(&value, &pattern, &args),
+        |value: String, pattern: String, args: Rest<ValueOrKwargs>| {
+            regex_search(&value, &pattern, &args.into_values())
+        },
     );
     env.add_filter(
         "regex_findall",
@@ -57,7 +59,7 @@ fn regex_replace(
     Ok(rendered)
 }
 
-fn regex_search(value: &str, pattern: &str, args: &Rest<Value>) -> Result<Value, Error> {
+fn regex_search(value: &str, pattern: &str, args: &[Value]) -> Result<Value, Error> {
     let (selectors, kwargs): (&[Value], Kwargs) = from_args(args)?;
     let flags = parse_regex_flags(&kwargs)?;
     kwargs.assert_all_used()?;
@@ -68,9 +70,9 @@ fn regex_search(value: &str, pattern: &str, args: &Rest<Value>) -> Result<Value,
     };
 
     if selectors.is_empty() {
-        return Ok(Value::from_serialize(
+        return Ok(Value::from(Serde(
             capture_text(&captures, 0).unwrap_or_default(),
-        ));
+        )));
     }
 
     let selected = selectors
@@ -82,9 +84,9 @@ fn regex_search(value: &str, pattern: &str, args: &Rest<Value>) -> Result<Value,
         .collect::<Result<Vec<_>, _>>()?;
 
     if selected.len() == 1 {
-        Ok(Value::from_serialize(&selected[0]))
+        Ok(Value::from(Serde(&selected[0])))
     } else {
-        Ok(Value::from_serialize(selected))
+        Ok(Value::from(Serde(selected)))
     }
 }
 
@@ -100,7 +102,7 @@ fn regex_findall(value: &str, pattern: &str, kwargs: &Kwargs) -> Result<Value, E
             .find_iter(value)
             .map(|regex_match| regex_match.as_str().to_string())
             .collect::<Vec<_>>();
-        return Ok(Value::from_serialize(matches));
+        return Ok(Value::from(Serde(matches)));
     }
 
     if capture_count == 2 {
@@ -108,7 +110,7 @@ fn regex_findall(value: &str, pattern: &str, kwargs: &Kwargs) -> Result<Value, E
             .captures_iter(value)
             .map(|captures| capture_text(&captures, 1).unwrap_or_default())
             .collect::<Vec<_>>();
-        return Ok(Value::from_serialize(matches));
+        return Ok(Value::from(Serde(matches)));
     }
 
     let matches = regex
@@ -119,7 +121,7 @@ fn regex_findall(value: &str, pattern: &str, kwargs: &Kwargs) -> Result<Value, E
                 .collect::<Vec<_>>()
         })
         .collect::<Vec<_>>();
-    Ok(Value::from_serialize(matches))
+    Ok(Value::from(Serde(matches)))
 }
 
 fn regex_escape(value: &str) -> String {
