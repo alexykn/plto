@@ -4,12 +4,21 @@ on:
   push:
     tags:
       - "v*"
+  # The patch-release workflow calls this after pushing a tag: a tag pushed
+  # with the workflow token does not start other workflows by itself.
+  workflow_call:
+    inputs:
+      tag:
+        description: Release tag to verify, build and publish (vX.Y.Z)
+        required: true
+        type: string
 
 permissions:
   contents: read
 
 env:
   CARGO_TERM_COLOR: always
+  RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
 
 jobs:
   verify:
@@ -17,6 +26,8 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
       - uses: dtolnay/rust-toolchain@1.97.1
         with:
           components: clippy, rustfmt
@@ -41,11 +52,13 @@ jobs:
             asset: plto-aarch64-apple-darwin
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
       - uses: dtolnay/rust-toolchain@1.97.1
       - run: cargo build -p plto --bins --release --locked
       - name: Package archive
         run: |
-          archive_dir="${{ matrix.asset }}-${GITHUB_REF_NAME#v}"
+          archive_dir="${{ matrix.asset }}-${RELEASE_TAG#v}"
           mkdir -p "dist/$archive_dir/bin"
           cp README.md "dist/$archive_dir/"
           cp target/release/plto "dist/$archive_dir/bin/"
@@ -65,10 +78,12 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
       - uses: dtolnay/rust-toolchain@1.97.1
       - name: Verify tag version
         run: |
-          tag_version="${GITHUB_REF_NAME#v}"
+          tag_version="${RELEASE_TAG#v}"
           package_version=$(awk -F '"' '/^version = / { print $2; exit }' Cargo.toml)
           test "$tag_version" = "$package_version"
       - name: Publish crates.io packages
@@ -112,7 +127,7 @@ jobs:
             done
           }
 
-          version="${GITHUB_REF_NAME#v}"
+          version="${RELEASE_TAG#v}"
           for package_name in \
             plto-plugin-api \
             plto-plugin-support \
@@ -136,8 +151,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
-            echo "GitHub release ${GITHUB_REF_NAME} already exists; skipping."
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            echo "GitHub release ${RELEASE_TAG} already exists; skipping."
           else
-            gh release create "$GITHUB_REF_NAME" --verify-tag --generate-notes release/*
+            gh release create "$RELEASE_TAG" --verify-tag --generate-notes release/*
           fi
