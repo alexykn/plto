@@ -417,7 +417,7 @@ mod tests {
         setup_git_repository(&temp_dir.path, options).unwrap();
 
         let head_ref = read_to_string(temp_dir.path.join(".git/refs/heads/main")).unwrap();
-        assert!(!head_ref.trim().is_empty());
+        assert_ne!(head_ref.trim(), "");
     }
 
     #[test]
