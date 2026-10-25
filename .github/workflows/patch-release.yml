@@ -2,7 +2,8 @@ name: Patch release
 
 # Publishes a patch release when everything merged since the last tag is a
 # dependency update: only Cargo manifests, Cargo.lock, rust-toolchain.toml or
-# .github/ changed, and at least one Cargo file did. Every workspace crate shares the version. Feature releases stay manual.
+# .github/ changed, and at least one Cargo file did. Every workspace crate shares the version. No direct dependency may have moved to a semver-incompatible version.
+# Feature releases stay manual.
 
 on:
   schedule:
@@ -53,6 +54,11 @@ jobs:
           fi
           if ! printf '%s\n' "$changed" | grep -qE '^((.*/)?Cargo\.toml|Cargo\.lock)$'; then
             echo "Only CI files changed since $last."
+            exit 0
+          fi
+          git show "$last:Cargo.lock" > "$RUNNER_TEMP/released.lock"
+          if ! python3 .github/scripts/breaking-deps.py "$RUNNER_TEMP/released.lock" Cargo.lock; then
+            echo "Semver-incompatible dependency updates since $last; leaving the release to a person."
             exit 0
           fi
           IFS=. read -r major minor patch <<< "$version"
